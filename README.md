@@ -8,154 +8,134 @@
 ## Configuración:
 - Las variables de entorno están en el archivo `.env`
 - Los usuarios están definidos en `userService.js`
-- La aplicación corre en puerto 3000 (contenedor) y se expone en puerto 8080 (nginx)
+- La aplicación corre en puerto 3000 (contenedor) y se expone directamente en puerto 8080
+- Configurado para usar exactamente 8 workers (escalabilidad horizontal)
 
 ## Permisos:
-- **Alice (cliente)**: Puede ver productos, acceder a recursos protegidos, y **crear órdenes**
-- **Bob (admin)**: Puede crear/modificar productos, gestionar clientes, ver órdenes, pero **NO puede crear órdenes** (solo los clientes pueden comprar)
+- **Alice (cliente)**: Puede ver productos, acceder a recursos protegidos, y crear órdenes.
+- **Bob (admin)**: Puede crear/modificar productos, gestionar clientes, ver órdenes, pero NO puede crear órdenes (solo los clientes pueden comprar).
 
 ## Pasos para el postman:
 
 ### GetHealth
 GET http://localhost:8080/health
 
+---
 ### LoginWithAlice
 POST http://localhost:8080/login
 
-**Body** <br />
-{
+    {
+      "username": "alice",
 
-  "username": "alice",
+      "password": "alicepass"
+    }
 
-  "password": "alicepass"
-
-}
-
+---
 ### LoginWithBob
 POST http://localhost:8080/login
 
-**Body** <br />
-{
+    {
+      "username": "bob",
 
-  "username": "bob",
+      "password": "bobpass"
+    }
 
-  "password": "bobpass"
-
-}
-
+---
 ### ProtectedWithTokenAlice
 GET http://localhost:8080/protected
 
-**Headers**
-
 - Key: Authorization
 - Value: Bearer {Token id de Alice}
 
+---
 ### ProtectedWithTokenBob
 GET http://localhost:8080/protected
 
-**Headers**
-
 - Key: Authorization
 - Value: Bearer {Token id de Bob}
 
+---
 ### AdminOnly
 GET http://localhost:8080/admin-only
 
-**Headers**
-
 - Key: Authorization
 - Value: Bearer {Token id de Bob}
 
+---
 ### ListOfProductsAlice
 GET http://localhost:8080/products
 
-**Headers**
-
 - Key: Authorization
 - Value: Bearer {Token id de Alice}
 
+---
 ### CreateProduct
 POST http://localhost:8080/products
 
-**Headers**
-
 - Key: Authorization
 - Value: Bearer {Token id de Bob}
 
-**Body** <br />
-{
 
-  "name": "Producto 3",
+      {
+        "name": "Producto 3",
+        
+        "price": 300
+      }
 
-  "price": 300
-
-}
-
+---
 ### ModifyProduct
 PUT http://localhost:8080/products/p1
 
-**Headers**
-
 - Key: Authorization
 - Value: Bearer {Token id de Bob}
 
-**Body** <br />
-{
-    
-  "name": "Producto 3",
+      {
+        "name": "Producto 3",
 
-  "price": 300
+        "price": 300
+      }
 
-}
-
+---
 ### GetClients (Admin only)
 GET http://localhost:8080/clients
 
-**Headers**
-
 - Key: Authorization
 - Value: Bearer {Token id de Bob}
 
+---
 ### CreateClient (Admin only)
 POST http://localhost:8080/clients
 
-**Headers**
-
 - Key: Authorization
 - Value: Bearer {Token id de Bob}
 
-**Body** <br />
-{
+      {
 
-  "name": "Cliente Nuevo"
+        "name": "Cliente Nuevo"
 
-}
+      }
 
+---
 ### GetOrders (Admin only)
 GET http://localhost:8080/orders
 
-**Headers**
-
 - Key: Authorization
 - Value: Bearer {Token id de Bob}
 
+---
 ### CreateOrder (Clientes only - NO admin)
 POST http://localhost:8080/orders
-
-**Headers**
 
 - Key: Authorization
 - Value: Bearer {Token id de Alice}
 
-**Body** <br />
-{
+      {
 
-  "clientId": 1,
+        "clientId": 1,
 
-  "productIds": [1, 2]
+        "productIds": [1, 2]
 
-}
+      }
 
 **Response** incluye: total calculado, información del cliente y productos
 

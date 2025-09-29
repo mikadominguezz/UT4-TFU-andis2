@@ -22,7 +22,7 @@ Mermaid Code:
 
 
 ## Descripción de componentes
-- API REST: Recibe las peticiones y las envía al módulo correspondiente.
+- API REST: Recibe las peticiones y las envía al módulo correspondiente. Utiliza clustering con 8 workers para escalabilidad horizontal.
 - Módulo Productos: Maneja la información de los productos.
 - Módulo Clientes: Maneja la información de los clientes.
 - Módulo Órdenes: Crea y muestra las órdenes usando datos de productos y clientes.
