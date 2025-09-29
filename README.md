@@ -202,18 +202,14 @@ En nuestro sistema hemos elegido **AP (Availability + Partition Tolerance)** del
 
 #### ✅ **P - Partition Tolerance (Tolerancia a particiones):**
 - **Servicios desacoplados**: Módulos independientes que se comunican por interfaces
-- **Sin base de datos centralizada**: No hay single point of failure
 - **Contenedores**: Cada instancia es independiente y puede ejecutarse en diferentes nodos
 
 #### ❌ **C - Consistency (Consistencia):**
 **Sacrificamos consistencia fuerte por las siguientes razones:**
-
 - **Datos hardcodeados**: Productos, clientes y órdenes no persisten entre requests
-- **Sin transacciones**: Las operaciones no son ACID
 - **Eventual consistency**: Los datos pueden ser inconsistentes temporalmente
-- **Servicios sin estado**: Cada request es independiente, no hay sincronización de estado
 
-#### 🎯 **Justificación de la elección AP:**
+#### **Justificación de la elección AP:**
 
 **¿Por qué elegimos Availability sobre Consistency?**
 1. **E-commerce de demo**: Priorizamos que el sistema esté siempre funcionando
@@ -222,13 +218,10 @@ En nuestro sistema hemos elegido **AP (Availability + Partition Tolerance)** del
 4. **Experiencia de usuario**: Los usuarios prefieren un sistema disponible aunque tenga datos ligeramente desactualizados
 
 **¿Qué impacto tendría elegir CP (Consistency + Partition tolerance)?**
-- ❌ Tendríamos que implementar base de datos con transacciones ACID
-- ❌ Menor disponibilidad: si la DB falla, todo el sistema falla
-- ❌ Menor escalabilidad: necesitaríamos sincronización entre workers
-- ❌ Mayor complejidad: manejo de locks, deadlocks, rollbacks
+- Menor disponibilidad: si la DB falla, todo el sistema falla
+- Menor escalabilidad: necesitaríamos sincronización entre workers
 
 **¿Qué impacto tendría elegir CA (Consistency + Availability)?**
-- ❌ No toleraríamos particiones de red
-- ❌ Sistema monolítico: todos los componentes en un solo nodo
-- ❌ Sin escalabilidad horizontal
-- ❌ Single point of failure
+- No toleraríamos particiones de red
+- Sistema monolítico: todos los componentes en un solo nodo
+- Sin escalabilidad horizontal
