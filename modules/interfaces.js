@@ -20,8 +20,23 @@ const ClientsInterface = {
 
 // Interface para acceder a órdenes
 const OrdersInterface = {
-  getAll: () => [],
-  getById: (id) => ({ id, clientId: 1, productIds: [1,2], date: new Date().toISOString() })
+  getAll: () => [
+    { 
+      id: 1, 
+      clientId: 1, 
+      productIds: [1, 2], 
+      date: '2024-09-01T10:30:00Z',
+      total: 300
+    },
+    { 
+      id: 2, 
+      clientId: 2, 
+      productIds: [1], 
+      date: '2024-09-15T14:45:00Z',
+      total: 100
+    }
+  ],
+  getById: (id) => ({ id, clientId: 1, productIds: [1,2], date: new Date().toISOString(), total: 300 })
 };
 
 module.exports = { ProductsInterface, ClientsInterface, OrdersInterface };

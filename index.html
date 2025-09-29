@@ -24,14 +24,16 @@
   <button onclick="getProtected()">GET /protected (Alice o Bob)</button>
   <pre id="protected"></pre>
 
-  <h2>4. Admin Login</h2>
-  <div>
-    <label>Username: <input id="adminUsername" value=""></label><br>
-    <label>Password: <input id="adminPassword" type="password" value=""></label><br>
-    <button onclick="loginAdmin()">POST /login (Admin)</button>
-    <button onclick="getAdmin()">GET /admin-only (Bob)</button>
+  <div class="admin-section">
+    <h2>4. Admin Login</h2>
+    <div>
+      <label>Username: <input id="adminUsername" value=""></label><br>
+      <label>Password: <input id="adminPassword" type="password" value=""></label><br>
+      <button onclick="loginAdmin()">POST /login (Admin)</button>
+      <button onclick="getAdmin()">GET /admin-only (Bob)</button>
+    </div>
+    <pre id="admin"></pre>
   </div>
-  <pre id="admin"></pre>
 
   <h2>5. Productos</h2>
 
@@ -39,15 +41,53 @@
   <pre id="products"></pre>
   <pre id="productsLatency"></pre>
 
-  <h3>Agregar/Modificar Producto (Admin)</h3>
-  <div>
-    <label>Producto ID (solo para modificar): <input id="productId" placeholder="Dejar vacío para crear"></label><br>
-    <label>Nombre: <input id="productName"></label><br>
-    <label>Precio: <input id="productPrice" type="number"></label><br>
-    <button onclick="saveProduct()">POST/PUT Producto</button>
+  <div class="admin-section">
+    <h3>Agregar/Modificar Producto (Admin)</h3>
+    <div>
+      <label>Producto ID (solo para modificar): <input id="productId" placeholder="Dejar vacío para crear"></label><br>
+      <label>Nombre: <input id="productName"></label><br>
+      <label>Precio: <input id="productPrice" type="number"></label><br>
+      <button onclick="saveProduct()">POST/PUT Producto</button>
+    </div>
+    <pre id="productResult"></pre>
+    <pre id="productLatency"></pre>
   </div>
-  <pre id="productResult"></pre>
-  <pre id="productLatency"></pre>
+
+  <div class="admin-section">
+    <h2>6. Clientes (Solo Admin)</h2>
+
+    <button onclick="getClients()">GET /clients (ver listado)</button>
+    <pre id="clients"></pre>
+    <pre id="clientsLatency"></pre>
+
+    <h3>Agregar Cliente (Admin)</h3>
+    <div>
+      <label>Nombre del Cliente: <input id="clientName" placeholder="Nombre del nuevo cliente"></label><br>
+      <button onclick="saveClient()">POST Cliente</button>
+    </div>
+    <pre id="clientResult"></pre>
+    <pre id="clientResultLatency"></pre>
+  </div>
+
+  <h2>7. Órdenes</h2>
+  
+  <div class="admin-section">
+    <h3>Ver Órdenes (Solo Admin)</h3>
+    <button onclick="getOrders()">GET /orders (ver listado)</button>
+    <pre id="orders"></pre>
+    <pre id="ordersLatency"></pre>
+  </div>
+
+  <div>
+    <h3>Crear Orden (Solo Clientes - Alice)</h3>
+    <div>
+      <label>Client ID: <input id="orderClientId" type="number" value="1" placeholder="ID del cliente"></label><br>
+      <label>Product IDs (separados por coma): <input id="orderProductIds" placeholder="1,2" value="1,2"></label><br>
+      <button onclick="createOrder()">POST Orden (como Alice)</button>
+    </div>
+    <pre id="orderResult"></pre>
+    <pre id="orderResultLatency"></pre>
+  </div>
 
   
 <!-- ---------------------------------------------------- --> 
@@ -189,6 +229,218 @@
         }
       } catch(err) {
         alert('Error al guardar producto: ' + err.message);
+      }
+    }
+
+    async function getClients() {
+      if (!tokenBob) { 
+        alert('Solo los administradores pueden ver la lista de clientes. Por favor haz login como Bob.'); 
+        return; 
+      }
+      
+      try {
+        const start = performance.now();
+        const res = await fetch(`${API_BASE}/clients`, {
+          headers: { 'Authorization': `Bearer ${tokenBob}` }
+        });
+        const end = performance.now();
+        const latency = end - start;
+
+        if (!res.ok) {
+          const errorData = await res.json();
+          document.getElementById('clients').textContent = `Error: ${errorData.error || 'No autorizado'}`;
+          document.getElementById('clientsLatency').textContent = `Tiempo de respuesta: ${latency.toFixed(2)} ms`;
+          alert('Error: ' + (errorData.error || 'No tienes permisos para ver los clientes'));
+          return;
+        }
+
+        const data = await res.json();
+        document.getElementById('clients').textContent = JSON.stringify(data, null, 2);
+        document.getElementById('clientsLatency').textContent = `Tiempo de respuesta: ${latency.toFixed(2)} ms`;
+      } catch(err) {
+        alert('Error al obtener clientes: ' + err.message);
+      }
+    }
+
+    async function saveClient() {
+      if (!tokenBob) { 
+        alert('Solo los administradores pueden crear clientes. Por favor haz login como Bob.'); 
+        return; 
+      }
+
+      const name = document.getElementById('clientName').value.trim();
+      if (!name) {
+        alert('El nombre del cliente es requerido');
+        return;
+      }
+
+      try {
+        const start = performance.now();
+        const res = await fetch(`${API_BASE}/clients`, {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${tokenBob}`
+          },
+          body: JSON.stringify({ name })
+        });
+        const end = performance.now();
+        const latency = end - start;
+
+        const data = await res.json();
+        document.getElementById('clientResult').textContent = JSON.stringify(data, null, 2);
+        document.getElementById('clientResultLatency').textContent = `Tiempo de respuesta: ${latency.toFixed(2)} ms`;
+
+        if (res.ok) {
+          alert('Cliente creado con éxito');
+          document.getElementById('clientName').value = ''; // Limpiar campo
+          getClients(); // Actualizar lista
+        } else {
+          alert('Error: ' + (data.error || 'No se pudo crear el cliente'));
+        }
+      } catch(err) {
+        alert('Error al crear cliente: ' + err.message);
+      }
+    }
+
+    async function testClientAccessWithAlice() {
+      if (!tokenAlice) { 
+        alert('Primero haz login como Alice para probar que no puede acceder a los clientes.'); 
+        return; 
+      }
+      
+      try {
+        const start = performance.now();
+        const res = await fetch(`${API_BASE}/clients`, {
+          headers: { 'Authorization': `Bearer ${tokenAlice}` }
+        });
+        const end = performance.now();
+        const latency = end - start;
+
+        const data = await res.json();
+        document.getElementById('clients').textContent = JSON.stringify(data, null, 2);
+        document.getElementById('clientsLatency').textContent = `Tiempo de respuesta: ${latency.toFixed(2)} ms`;
+        
+        if (!res.ok) {
+          alert('✅ Correcto: Alice no tiene permisos para ver clientes. Error: ' + (data.error || 'No autorizado'));
+        } else {
+          alert('❌ Error en la seguridad: Alice pudo acceder a los clientes');
+        }
+      } catch(err) {
+        alert('Error al probar acceso: ' + err.message);
+      }
+    }
+
+    async function getOrders() {
+      if (!tokenBob) { 
+        alert('Solo los administradores pueden ver todas las órdenes. Por favor haz login como Bob.'); 
+        return; 
+      }
+      
+      try {
+        const start = performance.now();
+        const res = await fetch(`${API_BASE}/orders`, {
+          headers: { 'Authorization': `Bearer ${tokenBob}` }
+        });
+        const end = performance.now();
+        const latency = end - start;
+
+        if (!res.ok) {
+          const errorData = await res.json();
+          document.getElementById('orders').textContent = `Error: ${errorData.error || 'No autorizado'}`;
+          document.getElementById('ordersLatency').textContent = `Tiempo de respuesta: ${latency.toFixed(2)} ms`;
+          alert('Error: ' + (errorData.error || 'No tienes permisos para ver las órdenes'));
+          return;
+        }
+
+        const data = await res.json();
+        document.getElementById('orders').textContent = JSON.stringify(data, null, 2);
+        document.getElementById('ordersLatency').textContent = `Tiempo de respuesta: ${latency.toFixed(2)} ms`;
+      } catch(err) {
+        alert('Error al obtener órdenes: ' + err.message);
+      }
+    }
+
+    async function createOrder() {
+      if (!tokenAlice) { 
+        alert('Solo los clientes pueden crear órdenes. Por favor haz login como Alice.'); 
+        return; 
+      }
+
+      const clientId = parseInt(document.getElementById('orderClientId').value);
+      const productIdsText = document.getElementById('orderProductIds').value.trim();
+      
+      if (!clientId || !productIdsText) {
+        alert('Client ID y Product IDs son requeridos');
+        return;
+      }
+
+      const productIds = productIdsText.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
+      if (productIds.length === 0) {
+        alert('Por favor ingresa IDs de productos válidos separados por coma');
+        return;
+      }
+
+      try {
+        const start = performance.now();
+        const res = await fetch(`${API_BASE}/orders`, {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${tokenAlice}`
+          },
+          body: JSON.stringify({ clientId, productIds })
+        });
+        const end = performance.now();
+        const latency = end - start;
+
+        const data = await res.json();
+        document.getElementById('orderResult').textContent = JSON.stringify(data, null, 2);
+        document.getElementById('orderResultLatency').textContent = `Tiempo de respuesta: ${latency.toFixed(2)} ms`;
+
+        if (res.ok) {
+          alert('¡Orden creada con éxito por Alice!');
+        } else {
+          alert('Error: ' + (data.error || 'No se pudo crear la orden'));
+        }
+      } catch(err) {
+        alert('Error al crear orden: ' + err.message);
+      }
+    }
+
+    async function testOrderAsAdmin() {
+      if (!tokenBob) { 
+        alert('Primero haz login como Bob para probar que los admins no pueden crear órdenes.'); 
+        return; 
+      }
+
+      const clientId = parseInt(document.getElementById('orderClientId').value) || 1;
+      const productIds = [1, 2]; // IDs fijos para la prueba
+
+      try {
+        const start = performance.now();
+        const res = await fetch(`${API_BASE}/orders`, {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${tokenBob}`
+          },
+          body: JSON.stringify({ clientId, productIds })
+        });
+        const end = performance.now();
+        const latency = end - start;
+
+        const data = await res.json();
+        document.getElementById('orderResult').textContent = JSON.stringify(data, null, 2);
+        document.getElementById('orderResultLatency').textContent = `Tiempo de respuesta: ${latency.toFixed(2)} ms`;
+        
+        if (!res.ok) {
+          alert('✅ Correcto: Bob (admin) no puede crear órdenes. Error: ' + (data.error || 'No autorizado'));
+        } else {
+          alert('❌ Error en la seguridad: Bob pudo crear una orden');
+        }
+      } catch(err) {
+        alert('Error al probar acceso: ' + err.message);
       }
     }
     </script>

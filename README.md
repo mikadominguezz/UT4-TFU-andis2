@@ -10,6 +10,10 @@
 - Los usuarios están definidos en `userService.js`
 - La aplicación corre en puerto 3000 (contenedor) y se expone en puerto 8080 (nginx)
 
+## Permisos:
+- **Alice (cliente)**: Puede ver productos, acceder a recursos protegidos, y **crear órdenes**
+- **Bob (admin)**: Puede crear/modificar productos, gestionar clientes, ver órdenes, pero **NO puede crear órdenes** (solo los clientes pueden comprar)
+
 ## Pasos para el postman:
 
 ### GetHealth
@@ -104,3 +108,55 @@ PUT http://localhost:8080/products/p1
   "price": 300
 
 }
+
+### GetClients (Admin only)
+GET http://localhost:8080/clients
+
+**Headers**
+
+- Key: Authorization
+- Value: Bearer {Token id de Bob}
+
+### CreateClient (Admin only)
+POST http://localhost:8080/clients
+
+**Headers**
+
+- Key: Authorization
+- Value: Bearer {Token id de Bob}
+
+**Body** <br />
+{
+
+  "name": "Cliente Nuevo"
+
+}
+
+### GetOrders (Admin only)
+GET http://localhost:8080/orders
+
+**Headers**
+
+- Key: Authorization
+- Value: Bearer {Token id de Bob}
+
+### CreateOrder (Clientes only - NO admin)
+POST http://localhost:8080/orders
+
+**Headers**
+
+- Key: Authorization
+- Value: Bearer {Token id de Alice}
+
+**Body** <br />
+{
+
+  "clientId": 1,
+
+  "productIds": [1, 2]
+
+}
+
+**Response** incluye: total calculado, información del cliente y productos
+
+**Nota**: Los administradores (Bob) NO pueden crear órdenes, solo los clientes (Alice)
