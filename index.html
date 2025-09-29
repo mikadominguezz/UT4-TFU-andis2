@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Demo API Client</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>API Demo Client</h1>
+
+  <h2>1. Health Check</h2>
+  <button onclick="getHealth()">GET /health</button>
+  <pre id="health"></pre>
+
+  <h2>2. Login</h2>
+  <div>
+    <label>Username: <input id="username" value=""></label><br>
+    <label>Password: <input id="password" type="password" value=""></label><br>
+    <button onclick="login()">POST /login</button>
+  </div>
+  <pre id="loginResult"></pre>
+
+  <h2>3. Protected</h2>
+  <button onclick="getProtected()">GET /protected (Alice o Bob)</button>
+  <pre id="protected"></pre>
+
+  <h2>4. Admin Login</h2>
+  <div>
+    <label>Username: <input id="adminUsername" value=""></label><br>
+    <label>Password: <input id="adminPassword" type="password" value=""></label><br>
+    <button onclick="loginAdmin()">POST /login (Admin)</button>
+    <button onclick="getAdmin()">GET /admin-only (Bob)</button>
+  </div>
+  <pre id="admin"></pre>
+
+  <h2>5. Productos</h2>
+
+  <button onclick="getProducts()">GET /products (ver listado)</button>
+  <pre id="products"></pre>
+  <pre id="productsLatency"></pre>
+
+  <h3>Agregar/Modificar Producto (Admin)</h3>
+  <div>
+    <label>Producto ID (solo para modificar): <input id="productId" placeholder="Dejar vacío para crear"></label><br>
+    <label>Nombre: <input id="productName"></label><br>
+    <label>Precio: <input id="productPrice" type="number"></label><br>
+    <button onclick="saveProduct()">POST/PUT Producto</button>
+  </div>
+  <pre id="productResult"></pre>
+  <pre id="productLatency"></pre>
+
+  
+<!-- ---------------------------------------------------- --> 
+
+  <script>
+    const API_BASE = 'http://localhost:8080';
+    let tokenAlice = '';
+    let tokenBob = '';
+
+    async function getHealth() {
+      const res = await fetch(`${API_BASE}/health`);
+      document.getElementById('health').textContent = JSON.stringify(await res.json(), null, 2);
+    }
+
+    async function login() {
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+      if (!username || !password) {
+        alert('Por favor ingresa username y password');
+        return;
+      }
+      try {
+        const res = await fetch(`${API_BASE}/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+        const data = await res.json();
+        if (res.ok && data.token) {
+          if (username === 'alice') tokenAlice = data.token;
+          document.getElementById('loginResult').textContent = `Usuario ${username} logueado, token almacenado.`;
+        } else {
+          document.getElementById('loginResult').textContent = JSON.stringify(data, null, 2);
+          alert('Error en login: Credenciales inválidas');
+        }
+      } catch(err) {
+        alert('Error en login: ' + err.message);
+      }
+    }
+
+    async function loginAdmin() {
+      const username = document.getElementById('adminUsername').value;
+      const password = document.getElementById('adminPassword').value;
+      if (!username || !password) {
+        alert('Por favor ingresa username y password');
+        return;
+      }
+      try {
+        const res = await fetch(`${API_BASE}/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+        const data = await res.json();
+        if (res.ok && data.token) {
+          tokenBob = data.token;
+          document.getElementById('admin').textContent = `Admin ${username} logueado, token almacenado.`;
+        } else {
+          document.getElementById('admin').textContent = JSON.stringify(data, null, 2);
+          alert('Error en login: Credenciales inválidas');
+        }
+      } catch(err) {
+        alert('Error en login: ' + err.message);
+      }
+    }
+
+    async function getProtected() {
+      const token = tokenAlice || tokenBob;
+      if (!token) { alert('Primero haz login'); return; }
+      const res = await fetch(`${API_BASE}/protected`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      document.getElementById('protected').textContent = JSON.stringify(await res.json(), null, 2);
+    }
+
+    async function getAdmin() {
+      if (!tokenBob) { alert('Primero haz login con Bob'); return; }
+      const res = await fetch(`${API_BASE}/admin-only`, {
+        headers: { 'Authorization': `Bearer ${tokenBob}` }
+      });
+      document.getElementById('admin').textContent = JSON.stringify(await res.json(), null, 2);
+    }
+
+    async function getProducts() {
+      const token = tokenAlice || tokenBob;
+      if (!token) { alert('Primero haz login'); return; }
+      
+      const start = performance.now();
+      const res = await fetch(`${API_BASE}/products`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const end = performance.now();
+      const latency = end - start;
+
+      const data = await res.json();
+      document.getElementById('products').textContent = JSON.stringify(data, null, 2);
+      document.getElementById('productsLatency').textContent = `Tiempo de respuesta: ${latency.toFixed(2)} ms`;
+    }
+
+    async function saveProduct() {
+      if (!tokenBob) { 
+        alert('Solo admins pueden agregar o modificar productos'); 
+        return; 
+      }
+
+      const id = document.getElementById('productId').value.trim();
+      const name = document.getElementById('productName').value.trim();
+      const price = parseFloat(document.getElementById('productPrice').value);
+      if (!name || isNaN(price)) {
+        alert('Nombre y precio son requeridos');
+        return;
+      }
+
+      const method = id ? 'PUT' : 'POST';
+      const endpoint = id ? `${API_BASE}/products/${id}` : `${API_BASE}/products`;
+
+      try {
+        const start = performance.now();
+        const res = await fetch(endpoint, {
+          method,
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${tokenBob}`
+          },
+          body: JSON.stringify({ name, price })
+        });
+        const end = performance.now();
+        const latency = end - start;
+
+        const data = await res.json();
+        document.getElementById('productResult').textContent = JSON.stringify(data, null, 2);
+        document.getElementById('productLatency').textContent = `Tiempo de respuesta: ${latency.toFixed(2)} ms`;
+
+        if (res.ok) {
+          alert(`Producto ${method === 'POST' ? 'creado' : 'modificado'} con éxito`);
+          getProducts();
+        } else {
+          alert('Error: ' + (data.error || 'No se pudo guardar'));
+        }
+      } catch(err) {
+        alert('Error al guardar producto: ' + err.message);
+      }
+    }
+    </script>
+  </body>
+</html>

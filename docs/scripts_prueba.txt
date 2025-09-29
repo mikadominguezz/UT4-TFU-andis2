@@ -1,0 +1,19 @@
+# Scripts de prueba para Mini E-commerce (curl)
+
+# Obtener todos los productos
+curl -X GET http://localhost:3000/products
+
+# Crear un producto
+curl -X POST http://localhost:3000/products -H "Content-Type: application/json" -d '{"name":"Producto C","price":300}'
+
+# Obtener todos los clientes
+curl -X GET http://localhost:3000/clients
+
+# Crear un cliente
+curl -X POST http://localhost:3000/clients -H "Content-Type: application/json" -d '{"name":"Cliente Tres"}'
+
+# Crear una orden
+curl -X POST http://localhost:3000/orders -H "Content-Type: application/json" -d '{"clientId":1,"productIds":[1,2]}'
+
+# Obtener todas las órdenes
+curl -X GET http://localhost:3000/orders
