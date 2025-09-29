@@ -1,9 +1,14 @@
-# UT2-TFU Andis II
+# UT3-TFU Andis II
 
 ## Pasos para correrlo:
 1. npm install
 2. docker compose up --build
 3. npx serve
+
+## Configuración:
+- Las variables de entorno están en el archivo `.env`
+- Los usuarios están definidos en `userService.js`
+- La aplicación corre en puerto 3000 (contenedor) y se expone en puerto 8080 (nginx)
 
 ## Pasos para el postman:
 
@@ -51,7 +56,7 @@ GET http://localhost:8080/protected
 - Value: Bearer {Token id de Bob}
 
 ### AdminOnly
-GET http://localhost:3001/admin-only
+GET http://localhost:8080/admin-only
 
 **Headers**
 

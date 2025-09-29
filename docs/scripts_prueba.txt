@@ -1,19 +1,54 @@
 # Scripts de prueba para Mini E-commerce (curl)
 
-# Obtener todos los productos
-curl -X GET http://localhost:3000/products
+# 1. Health Check
+curl -X GET http://localhost:8080/health
 
-# Crear un producto
-curl -X POST http://localhost:3000/products -H "Content-Type: application/json" -d '{"name":"Producto C","price":300}'
+# 2. Login Alice (usuario regular)
+curl -X POST http://localhost:8080/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"alice","password":"alicepass"}'
 
-# Obtener todos los clientes
-curl -X GET http://localhost:3000/clients
+# 3. Login Bob (admin)
+curl -X POST http://localhost:8080/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"bob","password":"bobpass"}'
 
-# Crear un cliente
-curl -X POST http://localhost:3000/clients -H "Content-Type: application/json" -d '{"name":"Cliente Tres"}'
+# 4. Obtener todos los productos (requiere token de Alice o Bob)
+curl -X GET http://localhost:8080/products \
+  -H "Authorization: Bearer YOUR_TOKEN_HERE"
 
-# Crear una orden
-curl -X POST http://localhost:3000/orders -H "Content-Type: application/json" -d '{"clientId":1,"productIds":[1,2]}'
+# 5. Crear un producto (requiere token de Bob - admin)
+curl -X POST http://localhost:8080/products \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer BOB_TOKEN_HERE" \
+  -d '{"name":"Producto C","price":300}'
 
-# Obtener todas las órdenes
-curl -X GET http://localhost:3000/orders
+# 6. Modificar un producto (requiere token de Bob - admin)
+curl -X PUT http://localhost:8080/products/1 \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer BOB_TOKEN_HERE" \
+  -d '{"name":"Producto Modificado","price":350}'
+
+# 7. Obtener todos los clientes
+curl -X GET http://localhost:8080/clients
+
+# 8. Crear un cliente
+curl -X POST http://localhost:8080/clients \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Cliente Tres"}'
+
+# 9. Crear una orden
+curl -X POST http://localhost:8080/orders \
+  -H "Content-Type: application/json" \
+  -d '{"clientId":1,"productIds":[1,2]}'
+
+# 10. Obtener todas las órdenes
+curl -X GET http://localhost:8080/orders
+
+# 11. Recurso protegido (requiere cualquier token válido)
+curl -X GET http://localhost:8080/protected \
+  -H "Authorization: Bearer YOUR_TOKEN_HERE"
+
+# 12. Recurso solo para admins (requiere token de Bob)
+curl -X GET http://localhost:8080/admin-only \
+  -H "Authorization: Bearer BOB_TOKEN_HERE"
