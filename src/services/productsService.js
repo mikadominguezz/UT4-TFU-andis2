@@ -1,108 +1,218 @@
-const BaseService = require('../implementations/BaseService');
+const Product = require('../models/Product');
 const IProductsService = require('../interfaces/IProductsService');
 
-const productsData = [
-  { id: 1, name: 'Producto A', price: 100, category: 'electrónicos' },
-  { id: 2, name: 'Producto B', price: 200, category: 'hogar' },
-  { id: 3, name: 'Producto C', price: 150, category: 'electrónicos' },
-  { id: 4, name: 'Producto D', price: 75, category: 'hogar' }
-];
-
-class ProductsService extends BaseService {
+class ProductsService extends IProductsService {
   constructor() {
     super();
-
-    this.data = productsData.map(product => ({
-      ...product,
-      deleted: false,
-      createdAt: product.createdAt || new Date().toISOString()
-    }));
   }
 
-  
-  create(data) {
-
-    const productData = {
-      ...data,
-      category: data.category || 'general',
-      price: parseFloat(data.price) || 0
-    };
-
-    return super.create(productData);
-  }
-
-  getByCategory(category) {
-    return this.data.filter(p => p.category && p.category.toLowerCase() === category.toLowerCase());
-  }
-
-  updatePrice(id, price) {
-    const product = this.getById(id);
-    if (product) {
-      return { ...product, price };
-    }
-    return null;
-  }
-
-  getByPriceRange(minPrice, maxPrice) {
-    const min = parseFloat(minPrice) || 0;
-    const max = parseFloat(maxPrice) || Infinity;
-    return this.data.filter(product => product.price >= min && product.price <= max);
-  }
-
-  getCategories() {
-    const categories = this.data.filter(product => product.category).map(product => product.category).filter((c, i, arr) => arr.indexOf(c) === i);
-    return categories.sort();
-  }
-
-  searchByName(searchTerm) {
-    if (!this.data || !Array.isArray(this.data)) return [];
-    return this.data.filter(product => product.name && product.name.toLowerCase().includes(searchTerm.toLowerCase()));
-  }
-
-  
-
-  count() {
+  async getAll() {
     try {
-      const count = this.data.filter(product => product && !product.deleted).length;
-      return count;
+      const products = await Product.find({ isActive: true })
+        .sort({ createdAt: -1 })
+        .lean();
+      return products.map(p => ({ ...p, id: p._id.toString() }));
     } catch (error) {
-      console.error('Error counting products:', error.message);
-      return 0;
+      console.error('Error getting products:', error);
+      return [];
     }
   }
 
-  exists(id) {
+  async getById(id) {
     try {
-      return this.data.some(product => product && product.id == id && !product.deleted);
+      const product = await Product.findById(id).lean();
+      if (product) {
+        await Product.findByIdAndUpdate(id, { $inc: { 'metadata.views': 1 } });
+        return { ...product, id: product._id.toString() };
+      }
+      return null;
     } catch (error) {
-      console.error('Error checking product existence:', error.message);
+      console.error('Error getting product by id:', error);
+      return null;
+    }
+  }
+
+  async create(data) {
+    try {
+      const productData = {
+        name: data.name,
+        price: parseFloat(data.price) || 0,
+        description: data.description || '',
+        category: data.category || 'General',
+        stock: data.stock || 0,
+        image: data.image || '',
+        tags: data.tags || []
+      };
+
+      const product = new Product(productData);
+      const saved = await product.save();
+      return { ...saved.toObject(), id: saved._id.toString() };
+    } catch (error) {
+      console.error('Error creating product:', error);
+      throw new Error('Error creating product');
+    }
+  }
+
+  async update(id, data) {
+    try {
+      const updated = await Product.findByIdAndUpdate(
+        id, 
+        { ...data, updatedAt: new Date() }, 
+        { new: true, runValidators: true }
+      ).lean();
+      
+      if (updated) {
+        return { ...updated, id: updated._id.toString() };
+      }
+      return null;
+    } catch (error) {
+      console.error('Error updating product:', error);
+      throw new Error('Error updating product');
+    }
+  }
+
+  async delete(id) {
+    try {
+      const result = await Product.findByIdAndUpdate(
+        id, 
+        { isActive: false, deletedAt: new Date() }
+      );
+      return !!result;
+    } catch (error) {
+      console.error('Error deleting product:', error);
       return false;
     }
   }
 
-  
-
-  clear() {
+  async getByCategory(category) {
     try {
-      const previousCount = this.count();
-      this.data = [];
+      const products = await Product.find({ 
+        category: new RegExp(category, 'i'),
+        isActive: true 
+      }).lean();
+      return products.map(p => ({ ...p, id: p._id.toString() }));
+    } catch (error) {
+      console.error('Error getting products by category:', error);
+      return [];
+    }
+  }
 
-      const result = {
-        message: 'Todos los productos han sido eliminados',
+  async updatePrice(id, price) {
+    try {
+      const updated = await Product.findByIdAndUpdate(
+        id,
+        { price: parseFloat(price), updatedAt: new Date() },
+        { new: true }
+      ).lean();
+      
+      if (updated) {
+        return { ...updated, id: updated._id.toString() };
+      }
+      return null;
+    } catch (error) {
+      console.error('Error updating price:', error);
+      return null;
+    }
+  }
+
+  async getByPriceRange(minPrice, maxPrice) {
+    try {
+      const min = parseFloat(minPrice) || 0;
+      const max = parseFloat(maxPrice) || Number.MAX_SAFE_INTEGER;
+      
+      const products = await Product.find({
+        price: { $gte: min, $lte: max },
+        isActive: true
+      }).lean();
+      
+      return products.map(p => ({ ...p, id: p._id.toString() }));
+    } catch (error) {
+      console.error('Error getting products by price range:', error);
+      return [];
+    }
+  }
+
+  async searchProducts(query) {
+    try {
+      const products = await Product.find({
+        $and: [
+          { isActive: true },
+          {
+            $or: [
+              { name: new RegExp(query, 'i') },
+              { description: new RegExp(query, 'i') },
+              { category: new RegExp(query, 'i') },
+              { tags: { $in: [new RegExp(query, 'i')] } }
+            ]
+          }
+        ]
+      }).lean();
+      
+      return products.map(p => ({ ...p, id: p._id.toString() }));
+    } catch (error) {
+      console.error('Error searching products:', error);
+      return [];
+    }
+  }
+
+  async getCategories() {
+    try {
+      const categories = await Product.distinct('category', { isActive: true });
+      return categories.sort();
+    } catch (error) {
+      console.error('Error getting categories:', error);
+      return [];
+    }
+  }
+
+  async searchByName(searchTerm) {
+    try {
+      const products = await Product.find({
+        name: new RegExp(searchTerm, 'i'),
+        isActive: true
+      }).lean();
+      return products.map(p => ({ ...p, id: p._id.toString() }));
+    } catch (error) {
+      console.error('Error searching by name:', error);
+      return [];
+    }
+  }
+
+  async count() {
+    try {
+      return await Product.countDocuments({ isActive: true });
+    } catch (error) {
+      console.error('Error counting products:', error);
+      return 0;
+    }
+  }
+
+  async exists(id) {
+    try {
+      const product = await Product.findById(id);
+      return !!product && product.isActive;
+    } catch (error) {
+      console.error('Error checking product existence:', error);
+      return false;
+    }
+  }
+
+  async clear() {
+    try {
+      const previousCount = await this.count();
+      await Product.updateMany({}, { isActive: false, deletedAt: new Date() });
+
+      return {
+        message: 'Todos los productos han sido desactivados',
         previousCount,
         clearedAt: new Date().toISOString(),
         operation: 'clear-products'
       };
-
-      console.log(`[PRODUCTS] Clear operation: ${previousCount} products removed`);
-      return result;
     } catch (error) {
-      console.error('Error clearing products:', error.message);
+      console.error('Error clearing products:', error);
       throw error;
     }
   }
-
-  
 
   validateForCreate(product) {
     if (!product.name || typeof product.name !== 'string' || product.name.trim().length < 2) {

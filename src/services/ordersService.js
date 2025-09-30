@@ -1,153 +1,208 @@
-const BaseService = require('../implementations/BaseService');
+const Order = require('../models/Order');
 const IOrdersService = require('../interfaces/IOrdersService');
 
-const ProductsService = require('./productsService');
-const ClientsService = require('./clientsService');
-
-const ordersData = [
-  { id: 1, clientId: 1, productIds: [1, 2], date: '2024-09-01T10:30:00Z', total: 300 },
-  { id: 2, clientId: 2, productIds: [1], date: '2024-09-15T14:45:00Z', total: 100 }
-];
-
-class OrdersService extends BaseService {
+class OrdersService extends IOrdersService {
   constructor() {
     super();
-
-    this.data = ordersData.map(order => ({
-      ...order,
-      deleted: false,
-      createdAt: order.date || new Date().toISOString()
-    }));
   }
 
-  
-  create(data) {
-
-    const client = ClientsService.getById(data.clientId);
-    if (!client) {
-      throw new Error('ValidationError: Cliente no encontrado');
-    }
-
-    
-    const products = data.productIds.map(id => ProductsService.getById(id));
-    if (products.some(p => !p)) {
-      throw new Error('ValidationError: Uno o más productos no existen');
-    }
-
-    
-    const total = this.calculateTotal(data.productIds);
-
-    
-    const orderData = {
-      ...data,
-      total,
-      status: 'pending',
-      client: client.name,
-      products: products.map(p => ({
-        id: p.id,
-        name: p.name,
-        price: p.price
-      }))
-    };
-
-    return super.create(orderData);
-  }
-
-  getByClientId(clientId) { return this.data.filter(o => o.clientId == clientId); }
-
-  getByDateRange(startDate, endDate) { return this.data.filter(o => { const orderDate = new Date(o.date); return orderDate >= new Date(startDate) && orderDate <= new Date(endDate); }); }
-
-  calculateTotal(productIds) { 
-    const products = productIds.map(id => ProductsService.getById(id));
-    return products.reduce((sum, product) => sum + (product ? product.price : 0), 0);
-  }
-
-  
-
-  count() {
+  async getAll() {
     try {
-      return this.data.filter(order => order && !order.deleted).length;
+      const orders = await Order.find()
+        .populate('clientId', 'name email')
+        .populate('items.productId', 'name price')
+        .sort({ createdAt: -1 })
+        .lean();
+      return orders.map(o => ({ ...o, id: o._id.toString() }));
     } catch (error) {
-      console.error('Error counting orders:', error.message);
-      return 0;
+      console.error('Error getting orders:', error);
+      return [];
     }
   }
 
-  exists(id) {
+  async getById(id) {
     try {
-      return this.data.some(order => order && order.id == id && !order.deleted);
+      const order = await Order.findById(id)
+        .populate('clientId', 'name email')
+        .populate('items.productId', 'name price')
+        .lean();
+      
+      if (order) {
+        return { ...order, id: order._id.toString() };
+      }
+      return null;
     } catch (error) {
-      console.error('Error checking order existence:', error.message);
+      console.error('Error getting order by id:', error);
+      return null;
+    }
+  }
+
+  async create(data) {
+    try {
+      const orderData = {
+        clientId: data.clientId,
+        items: data.items.map(item => ({
+          productId: item.productId,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+          subtotal: item.price * item.quantity
+        })),
+        totals: {
+          subtotal: data.items.reduce((sum, item) => sum + (item.price * item.quantity), 0),
+          tax: data.tax || 0,
+          shipping: data.shipping || 0
+        },
+        status: data.status || 'pending',
+        shippingAddress: data.shippingAddress || {},
+        notes: data.notes || ''
+      };
+
+      orderData.totals.total = orderData.totals.subtotal + orderData.totals.tax + orderData.totals.shipping;
+
+      const order = new Order(orderData);
+      const saved = await order.save();
+      
+      const populated = await Order.findById(saved._id)
+        .populate('clientId', 'name email')
+        .populate('items.productId', 'name price')
+        .lean();
+      
+      return { ...populated, id: populated._id.toString() };
+    } catch (error) {
+      console.error('Error creating order:', error);
+      throw new Error('Error creating order');
+    }
+  }
+
+  async update(id, data) {
+    try {
+      const updated = await Order.findByIdAndUpdate(
+        id,
+        { ...data, updatedAt: new Date() },
+        { new: true, runValidators: true }
+      )
+      .populate('clientId', 'name email')
+      .populate('items.productId', 'name price')
+      .lean();
+      
+      if (updated) {
+        return { ...updated, id: updated._id.toString() };
+      }
+      return null;
+    } catch (error) {
+      console.error('Error updating order:', error);
+      throw new Error('Error updating order');
+    }
+  }
+
+  async delete(id) {
+    try {
+      const result = await Order.findByIdAndUpdate(
+        id,
+        { status: 'cancelled', updatedAt: new Date() }
+      );
+      return !!result;
+    } catch (error) {
+      console.error('Error deleting order:', error);
       return false;
     }
   }
 
-  
-
-  clear() {
+  async getByClientId(clientId) {
     try {
-      const previousCount = this.count();
-      this.data = [];
-
-      const result = {
-        message: 'Todas las órdenes han sido eliminadas',
-        previousCount,
-        clearedAt: new Date().toISOString(),
-        operation: 'clear-orders'
-      };
-
-      console.log(`[ORDERS] Clear operation: ${previousCount} orders removed`);
-      return result;
+      const orders = await Order.find({ clientId })
+        .populate('clientId', 'name email')
+        .populate('items.productId', 'name price')
+        .sort({ createdAt: -1 })
+        .lean();
+      return orders.map(o => ({ ...o, id: o._id.toString() }));
     } catch (error) {
-      console.error('Error clearing orders:', error.message);
-      throw error;
-    }
-  }
-
-  
-
-  getOrdersByStatus(status) {
-    try {
-      return this.data.filter(order =>
-        order && !order.deleted && order.status === status
-      );
-    } catch (error) {
-      console.error('Error filtering orders by status:', error.message);
+      console.error('Error getting orders by client:', error);
       return [];
     }
   }
 
-  getTotalRevenue() {
+  async getByStatus(status) {
     try {
-      return this.data
-        .filter(order => order && !order.deleted)
-        .reduce((total, order) => total + (order.total || 0), 0);
+      const orders = await Order.find({ status })
+        .populate('clientId', 'name email')
+        .populate('items.productId', 'name price')
+        .sort({ createdAt: -1 })
+        .lean();
+      return orders.map(o => ({ ...o, id: o._id.toString() }));
     } catch (error) {
-      console.error('Error calculating total revenue:', error.message);
-      return 0;
-    }
-  }
-
-  getOrdersToday() {
-    try {
-      const today = new Date();
-      const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-      const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
-
-      return this.getByDateRange(startOfDay.toISOString(), endOfDay.toISOString());
-    } catch (error) {
-      console.error('Error getting today orders:', error.message);
+      console.error('Error getting orders by status:', error);
       return [];
     }
   }
 
-  getClientOrderCount(clientId) {
+  async updateStatus(id, status) {
     try {
-      return this.getByClientId(clientId).length;
+      const updated = await Order.findByIdAndUpdate(
+        id,
+        { status, updatedAt: new Date() },
+        { new: true }
+      )
+      .populate('clientId', 'name email')
+      .populate('items.productId', 'name price')
+      .lean();
+      
+      if (updated) {
+        return { ...updated, id: updated._id.toString() };
+      }
+      return null;
     } catch (error) {
-      console.error('Error counting client orders:', error.message);
+      console.error('Error updating order status:', error);
+      return null;
+    }
+  }
+
+  async count() {
+    try {
+      return await Order.countDocuments({ status: { $ne: 'cancelled' } });
+    } catch (error) {
+      console.error('Error counting orders:', error);
       return 0;
     }
+  }
+
+  async exists(id) {
+    try {
+      const order = await Order.findById(id);
+      return !!order;
+    } catch (error) {
+      console.error('Error checking order existence:', error);
+      return false;
+    }
+  }
+
+  validateForCreate(order) {
+    if (!order.clientId) {
+      throw new Error('ValidationError: ClientId es requerido');
+    }
+
+    if (!order.items || !Array.isArray(order.items) || order.items.length === 0) {
+      throw new Error('ValidationError: Items son requeridos');
+    }
+
+    for (const item of order.items) {
+      if (!item.productId) {
+        throw new Error('ValidationError: ProductId es requerido para cada item');
+      }
+      if (!item.quantity || item.quantity <= 0) {
+        throw new Error('ValidationError: Quantity debe ser mayor a 0');
+      }
+      if (!item.price || item.price <= 0) {
+        throw new Error('ValidationError: Price debe ser mayor a 0');
+      }
+    }
+
+    return true;
+  }
+
+  validateForUpdate(order) {
+    return this.validateForCreate(order);
   }
 }
 
