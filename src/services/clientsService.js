@@ -1,4 +1,4 @@
-const Client = require('../models/Client');
+const Client = require('../schemas/ClientSchema');
 const IClientsService = require('../interfaces/IClientsService');
 
 class ClientsService extends IClientsService {

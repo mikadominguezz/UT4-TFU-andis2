@@ -1,4 +1,4 @@
-const Order = require('../models/Order');
+const Order = require('../schemas/OrderSchema');
 const IOrdersService = require('../interfaces/IOrdersService');
 
 class OrdersService extends IOrdersService {

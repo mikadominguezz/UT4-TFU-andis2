@@ -1,4 +1,4 @@
-const Product = require('../models/Product');
+const Product = require('../schemas/ProductSchema');
 const IProductsService = require('../interfaces/IProductsService');
 
 class ProductsService extends IProductsService {
