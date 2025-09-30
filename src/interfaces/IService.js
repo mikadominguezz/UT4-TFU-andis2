@@ -1,35 +1,70 @@
 class IService {
+  constructor() {
+    this.data = [];
+  }
+
   getAll() {
-    throw new Error('IService.getAll() debe ser implementado por la clase concreta');
+    return this.data.filter(item => !item.deleted);
   }
 
   getById(id) {
-    throw new Error('IService.getById() debe ser implementado por la clase concreta');
+    if (!id) {
+      throw new Error('ValidationError: ID es requerido');
+    }
+    return this.data.find(item => item.id === id && !item.deleted) || null;
   }
 
   create(data) {
-    throw new Error('IService.create() debe ser implementado por la clase concreta');
+    if (!data || typeof data !== 'object') {
+      throw new Error('ValidationError: Data es requerido y debe ser un objeto');
+    }
+    const newItem = {
+      id: Date.now(),
+      ...data,
+      createdAt: new Date().toISOString(),
+      deleted: false
+    };
+    this.data.push(newItem);
+    return newItem;
   }
 
   update(id, data) {
-    throw new Error('IService.update() debe ser implementado por la clase concreta');
+    if (!id) {
+      throw new Error('ValidationError: ID es requerido');
+    }
+    const itemIndex = this.data.findIndex(item => item.id === id && !item.deleted);
+    if (itemIndex === -1) {
+      throw new Error(`NotFoundError: Item con ID ${id} no encontrado`);
+    }
+    this.data[itemIndex] = { ...this.data[itemIndex], ...data, updatedAt: new Date().toISOString() };
+    return this.data[itemIndex];
   }
+
   delete(id) {
-    throw new Error('IService.delete() debe ser implementado por la clase concreta');
+    const itemIndex = this.data.findIndex(item => item.id === id && !item.deleted);
+    if (itemIndex === -1) {
+      throw new Error(`NotFoundError: Item con ID ${id} no encontrado`);
+    }
+    this.data[itemIndex].deleted = true;
+    this.data[itemIndex].deletedAt = new Date().toISOString();
+    return this.data[itemIndex];
   }
 
   count() {
-    throw new Error('IService.count() debe ser implementado por la clase concreta');
+    return this.data.filter(item => !item.deleted).length;
   }
 
   exists(id) {
-    throw new Error('IService.exists() debe ser implementado por la clase concreta');
+    return this.data.some(item => item.id === id && !item.deleted);
   }
 
   clear() {
-    throw new Error('IService.clear() debe ser implementado por la clase concreta');
+    const clearedData = this.data.filter(item => !item.deleted);
+    this.data = [];
+    return clearedData.length;
   }
 }
+
 IService.METADATA = {
   version: '1.0.0',
   permissions: {

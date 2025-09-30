@@ -4,31 +4,18 @@ class IClientsService extends IService {
 
   
   getByName(name) {
-    throw new Error('IClientsService.getByName() debe ser implementado');
-  }
-
-  getByEmail(email) {
-    throw new Error('IClientsService.getByEmail() debe ser implementado');
+    return this.data.filter(client =>
+      client.name.toLowerCase().includes(name.toLowerCase()) && !client.deleted
+    );
   }
 
   searchClients(searchTerm) {
-    throw new Error('IClientsService.searchClients() debe ser implementado');
-  }
-
-  
-
-  getActiveClients() {
-    throw new Error('IClientsService.getActiveClients() debe ser implementado');
-  }
-
-  getClientsByDateRange(startDate, endDate) {
-    throw new Error('IClientsService.getClientsByDateRange() debe ser implementado');
-  }
-
-  
-
-  getClientStats() {
-    throw new Error('IClientsService.getClientStats() debe ser implementado');
+    const term = searchTerm.toLowerCase();
+    return this.data.filter(client =>
+      (client.name.toLowerCase().includes(term) ||
+        client.email?.toLowerCase().includes(term)) &&
+      !client.deleted
+    );
   }
 }
 IClientsService.METADATA = {

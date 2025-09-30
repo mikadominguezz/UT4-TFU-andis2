@@ -9,8 +9,14 @@ const SECRET = process.env.JWT_SECRET;
 
 const ProductsService = require('../services/productsService');
 
-router.get('/', authenticateJWT(SECRET), (req, res) => {
-  res.json(ProductsService.getAll());
+router.get('/', authenticateJWT(SECRET), async (req, res) => {
+  try {
+    const products = await ProductsService.getAll();
+    res.json(products);
+  } catch (error) {
+    console.error('Error fetching products:', error);
+    res.status(500).json({ error: 'Error fetching products' });
+  }
 });
 
 router.post('/', authenticateJWT(SECRET), authorizeRoles('admin'), (req, res) => {

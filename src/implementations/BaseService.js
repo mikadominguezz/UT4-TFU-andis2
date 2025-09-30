@@ -218,29 +218,34 @@ class BaseService extends IService {
     }
   }
 
-  
-
   generateId() {
     return Date.now() + Math.floor(Math.random() * 1000);
   }
 
   validateForCreate(item) {
-
+    if (!item || typeof item !== 'object') {
+      throw new Error('ValidationError: El item debe ser un objeto válido');
+    }
+    if (!item.name || item.name.length < 2) {
+      throw new Error('ValidationError: El nombre es obligatorio y debe tener al menos 2 caracteres');
+    }
+    if (item.email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(item.email)) {
+      throw new Error('ValidationError: El email no es válido');
+    }
     return true;
   }
 
   validateForUpdate(item) {
-
+    if (!item || typeof item !== 'object') {
+      throw new Error('ValidationError: El item debe ser un objeto válido');
+    }
+    if (item.name && item.name.length < 2) {
+      throw new Error('ValidationError: El nombre debe tener al menos 2 caracteres');
+    }
+    if (item.email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(item.email)) {
+      throw new Error('ValidationError: El email no es válido');
+    }
     return true;
-  }
-
-  emitEvent(eventType, data) {
-
-    console.log(`[EVENT] ${eventType}:`, JSON.stringify(data, null, 2));
-  }
-
-  getLastOperationStatus() {
-    return this.lastOperationStatus;
   }
 }
 

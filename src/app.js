@@ -2,6 +2,7 @@ require('dotenv').config();
 
 const express = require('express');
 const bodyParser = require('body-parser');
+const cors = require('cors');
 const database = require('./config/database');
 
 const productsController = require('./controllers/productsController');
@@ -13,6 +14,12 @@ async function createApp() {
   const app = express();
   app.use(bodyParser.json());
 
+  app.use(cors({
+    origin: 'http://localhost:3000',
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    credentials: true
+  }));
+
   try {
     await database.connect();
     console.log('🚀 TechMart API iniciada con MongoDB');
@@ -21,10 +28,10 @@ async function createApp() {
     process.exit(1);
   }
 
-  
+  app.use(express.static('public'));
+
   app.get('/health', (req, res) => res.json({ ok: true, pid: process.pid }));
 
-  
   app.use('/products', productsController);
   app.use('/clients', clientsController);
   app.use('/orders', ordersController);
