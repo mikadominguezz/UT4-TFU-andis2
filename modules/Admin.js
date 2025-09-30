@@ -4,100 +4,99 @@ require('dotenv').config();
 const express = require('express');
 const router = express.Router();
 const { authenticateJWT, authorizeRoles } = require('../auth');
-const ClientsService = require('./ClientsService');
+const AdminService = require('./AdminService');
 
 const SECRET = process.env.JWT_SECRET;
 
 // Rutas administrativas para gestión de clientes
 
-// Obtener todos los clientes (solo admins)
+// Obtener todos los clientes con detalles administrativos (solo admins)
 router.get('/clients', authenticateJWT(SECRET), authorizeRoles('admin'), (req, res) => {
-  res.json(ClientsService.getAll());
+  res.json(AdminService.getAllClientsWithDetails());
 });
 
-// Crear cliente (solo admins)
+// Crear cliente como admin (solo admins)
 router.post('/clients', authenticateJWT(SECRET), authorizeRoles('admin'), (req, res) => {
   const { name, email } = req.body;
   if (!name) {
     return res.status(400).json({ error: 'Nombre es requerido' });
   }
-  const newClient = ClientsService.create({ name, email });
+  const newClient = AdminService.createClientAsAdmin({ name, email });
   res.status(201).json(newClient);
 });
 
 // Buscar cliente por nombre (solo admins)
 router.get('/clients/search/:name', authenticateJWT(SECRET), authorizeRoles('admin'), (req, res) => {
   const { name } = req.params;
-  const clients = ClientsService.getByName(name);
+  const clients = AdminService.getByName(name);
   res.json(clients);
 });
 
 // Obtener cliente específico por ID (solo admins)
 router.get('/clients/:id', authenticateJWT(SECRET), authorizeRoles('admin'), (req, res) => {
   const { id } = req.params;
-  const client = ClientsService.getById(id);
+  const client = AdminService.getById(id);
   res.json(client);
 });
 
-// Actualizar cliente (solo admins)
+// Actualizar cliente como admin (solo admins)
 router.put('/clients/:id', authenticateJWT(SECRET), authorizeRoles('admin'), (req, res) => {
   const { id } = req.params;
-  const { name, email } = req.body;
+  const { name, email, active } = req.body;
   if (!name) {
     return res.status(400).json({ error: 'Nombre es requerido' });
   }
-  const updated = ClientsService.update(id, { name, email });
+  const updated = AdminService.updateClientAsAdmin(id, { name, email, active });
   res.status(200).json(updated);
 });
 
 // Panel de estadísticas admin (solo admins)
 router.get('/dashboard', authenticateJWT(SECRET), authorizeRoles('admin'), (req, res) => {
-  const stats = ClientsService.getClientStats();
+  const stats = AdminService.getAdminStats();
   stats.adminUser = req.user.username;
   res.json(stats);
 });
 
-// Buscar clientes por email (solo admins)
-router.get('/clients/email/:email', authenticateJWT(SECRET), authorizeRoles('admin'), (req, res) => {
-  const { email } = req.params;
-  const client = ClientsService.getByEmail(email);
-  if (!client) {
-    return res.status(404).json({ error: 'Cliente no encontrado con ese email' });
+// Activar/desactivar cliente (solo admins)
+router.patch('/clients/:id/status', authenticateJWT(SECRET), authorizeRoles('admin'), (req, res) => {
+  const { id } = req.params;
+  const { active } = req.body;
+  if (active === undefined) {
+    return res.status(400).json({ error: 'Campo active es requerido (true/false)' });
   }
-  res.json(client);
+  const updatedClient = AdminService.toggleClientStatus(id, active);
+  res.json(updatedClient);
 });
 
-// Obtener solo clientes activos (solo admins)
-router.get('/clients/active', authenticateJWT(SECRET), authorizeRoles('admin'), (req, res) => {
-  const activeClients = ClientsService.getActiveClients();
-  res.json(activeClients);
-});
-
-// Búsqueda general de clientes (solo admins)
-router.get('/clients/search-term/:term', authenticateJWT(SECRET), authorizeRoles('admin'), (req, res) => {
-  const { term } = req.params;
-  const results = ClientsService.searchClients(term);
+// Búsqueda avanzada de clientes (solo admins)
+router.post('/clients/advanced-search', authenticateJWT(SECRET), authorizeRoles('admin'), (req, res) => {
+  const criteria = req.body;
+  const results = AdminService.advancedClientSearch(criteria);
   res.json({
-    searchTerm: term,
+    criteria,
     results,
     count: results.length
   });
 });
 
-// Obtener clientes por rango de fechas (solo admins)
-router.get('/clients/date-range/:startDate/:endDate', authenticateJWT(SECRET), authorizeRoles('admin'), (req, res) => {
-  const { startDate, endDate } = req.params;
-  try {
-    const clients = ClientsService.getClientsByDateRange(startDate, endDate);
-    res.json({
-      startDate,
-      endDate,
-      clients,
-      count: clients.length
-    });
-  } catch (error) {
-    return res.status(400).json({ error: 'Formato de fecha inválido' });
+// Generar reporte completo de clientes (solo admins)
+router.get('/reports/clients', authenticateJWT(SECRET), authorizeRoles('admin'), (req, res) => {
+  const report = AdminService.generateClientReport();
+  res.json(report);
+});
+
+// Operaciones masivas en clientes (solo admins)
+router.post('/clients/bulk-update', authenticateJWT(SECRET), authorizeRoles('admin'), (req, res) => {
+  const { clientIds, updateData } = req.body;
+  if (!clientIds || !Array.isArray(clientIds) || clientIds.length === 0) {
+    return res.status(400).json({ error: 'clientIds debe ser un array no vacío' });
   }
+  if (!updateData || typeof updateData !== 'object') {
+    return res.status(400).json({ error: 'updateData es requerido' });
+  }
+  
+  const result = AdminService.bulkUpdateClients(clientIds, updateData);
+  res.json(result);
 });
 
 module.exports = router;

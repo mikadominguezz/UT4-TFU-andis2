@@ -16,35 +16,15 @@ class ClientsService extends IClientsService {
     this.data = clientsData;
   }
 
-  getAll() {
-    // Usar implementación de la clase base
-    return super.getAll();
-  }
-
   getById(id) {
     // Usar implementación de la clase base que busca en this.data
     return super.getById(id);
   }
 
-  create(data) {
-    const newClient = {
-      id: Date.now(),
-      name: data.name,
-      email: data.email || `cliente${Date.now()}@example.com`,
-      createdAt: new Date().toISOString()
-    };
-    // En un servicio sin estado, no persistimos realmente
-    return newClient;
-  }
 
   update(id, data) {
     // Usar implementación de la clase base
     return super.update(id, data);
-  }
-
-  delete(id) {
-    // Usar implementación de la clase base
-    return super.delete(id);
   }
 
   // Métodos específicos de clientes
