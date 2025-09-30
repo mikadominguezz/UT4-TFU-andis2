@@ -3,23 +3,23 @@ require('dotenv').config();
 const express = require('express');
 const bodyParser = require('body-parser');
 
-const productsRouter = require('./routes/products');
-const clientsRouter = require('./routes/clients');
-const ordersRouter = require('./routes/orders');
-const adminRouter = require('./routes/admin');
+const productsController = require('./controllers/productsController');
+const clientsController = require('./controllers/clientsController');
+const ordersController = require('./controllers/ordersController');
+const adminController = require('./controllers/adminController');
 
 function createApp() {
   const app = express();
   app.use(bodyParser.json());
 
-  // HealthCheck
+  
   app.get('/health', (req, res) => res.json({ ok: true, pid: process.pid }));
 
-  // Routes
-  app.use('/products', productsRouter);
-  app.use('/clients', clientsRouter);
-  app.use('/orders', ordersRouter);
-  app.use('/admin', adminRouter);
+  
+  app.use('/products', productsController);
+  app.use('/clients', clientsController);
+  app.use('/orders', ordersController);
+  app.use('/admin', adminController);
 
   app.get('/', (req, res) => {
     res.send('Mini e-commerce API funcionando');

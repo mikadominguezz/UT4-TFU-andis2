@@ -27,8 +27,8 @@ function authorizeCustomersOnly() {
     const roles = (req.user && req.user.roles) || [];
     const isCustomer = roles.includes('user') && !roles.includes('admin');
     if (!isCustomer) {
-      return res.status(403).json({ 
-        error: 'Solo los clientes pueden crear órdenes. Los administradores no pueden realizar compras.' 
+      return res.status(403).json({
+        error: 'Solo los clientes pueden crear órdenes. Los administradores no pueden realizar compras.'
       });
     }
     next();

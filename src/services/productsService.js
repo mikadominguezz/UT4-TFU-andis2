@@ -1,3 +1,4 @@
+const BaseService = require('../implementations/BaseService');
 const IProductsService = require('../interfaces/IProductsService');
 
 const productsData = [
@@ -7,37 +8,27 @@ const productsData = [
   { id: 4, name: 'Producto D', price: 75, category: 'hogar' }
 ];
 
-class ProductsService extends IProductsService {
+class ProductsService extends BaseService {
   constructor() {
     super();
-    this.data = productsData;
+
+    this.data = productsData.map(product => ({
+      ...product,
+      deleted: false,
+      createdAt: product.createdAt || new Date().toISOString()
+    }));
   }
 
-  getAll() {
-    return super.getAll();
-  }
-
-  getById(id) {
-    const product = this.data.find(p => p.id == id);
-    return product || { id: parseInt(id), name: `Producto ${id}`, price: 100 * id, category: 'general' };
-  }
-
+  
   create(data) {
-    const newProduct = {
-      id: Date.now(),
-      name: data.name,
-      price: data.price,
-      category: data.category || 'general'
+
+    const productData = {
+      ...data,
+      category: data.category || 'general',
+      price: parseFloat(data.price) || 0
     };
-    return newProduct;
-  }
 
-  update(id, data) {
-    return super.update(id, data);
-  }
-
-  delete(id) {
-    return super.delete(id);
+    return super.create(productData);
   }
 
   getByCategory(category) {
@@ -66,6 +57,71 @@ class ProductsService extends IProductsService {
   searchByName(searchTerm) {
     if (!this.data || !Array.isArray(this.data)) return [];
     return this.data.filter(product => product.name && product.name.toLowerCase().includes(searchTerm.toLowerCase()));
+  }
+
+  
+
+  count() {
+    try {
+      const count = this.data.filter(product => product && !product.deleted).length;
+      return count;
+    } catch (error) {
+      console.error('Error counting products:', error.message);
+      return 0;
+    }
+  }
+
+  exists(id) {
+    try {
+      return this.data.some(product => product && product.id == id && !product.deleted);
+    } catch (error) {
+      console.error('Error checking product existence:', error.message);
+      return false;
+    }
+  }
+
+  
+
+  clear() {
+    try {
+      const previousCount = this.count();
+      this.data = [];
+
+      const result = {
+        message: 'Todos los productos han sido eliminados',
+        previousCount,
+        clearedAt: new Date().toISOString(),
+        operation: 'clear-products'
+      };
+
+      console.log(`[PRODUCTS] Clear operation: ${previousCount} products removed`);
+      return result;
+    } catch (error) {
+      console.error('Error clearing products:', error.message);
+      throw error;
+    }
+  }
+
+  
+
+  validateForCreate(product) {
+    if (!product.name || typeof product.name !== 'string' || product.name.trim().length < 2) {
+      throw new Error('ValidationError: Nombre es requerido y debe tener al menos 2 caracteres');
+    }
+
+    if (product.price === undefined || product.price === null || isNaN(product.price) || product.price < 0) {
+      throw new Error('ValidationError: Precio es requerido y debe ser un número mayor o igual a 0');
+    }
+
+    if (product.category && typeof product.category !== 'string') {
+      throw new Error('ValidationError: Categoría debe ser una cadena de texto');
+    }
+
+    return true;
+  }
+
+  validateForUpdate(product) {
+    return this.validateForCreate(product);
   }
 }
 

@@ -1,13 +1,52 @@
 class IService {
-  constructor() { this.data = []; }
-  getAll() { return this.data; }
-  getById(id) { const item = this.data.find(item => item.id == id); if (item) return item; return { id: parseInt(id), name: `Item ${id}`, createdAt: new Date().toISOString() }; }
-  create(data) { const newItem = { id: Date.now(), ...data, createdAt: new Date().toISOString() }; return newItem; }
-  update(id, data) { const existingItem = this.getById(id); const updatedItem = { ...existingItem, ...data, id: parseInt(id), updatedAt: new Date().toISOString() }; return updatedItem; }
-  delete(id) { const item = this.getById(id); if (item) return { id: parseInt(id), deleted: true, deletedAt: new Date().toISOString(), message: `Item ${id} marcado como eliminado` }; throw new Error(`Item con ID ${id} no encontrado`); }
-  count() { return this.data.length; }
-  exists(id) { return this.data.some(item => item.id == id); }
-  clear() { this.data = []; return { message: 'Todos los datos han sido limpiados' }; }
+  getAll() {
+    throw new Error('IService.getAll() debe ser implementado por la clase concreta');
+  }
+
+  getById(id) {
+    throw new Error('IService.getById() debe ser implementado por la clase concreta');
+  }
+
+  create(data) {
+    throw new Error('IService.create() debe ser implementado por la clase concreta');
+  }
+
+  update(id, data) {
+    throw new Error('IService.update() debe ser implementado por la clase concreta');
+  }
+  delete(id) {
+    throw new Error('IService.delete() debe ser implementado por la clase concreta');
+  }
+
+  count() {
+    throw new Error('IService.count() debe ser implementado por la clase concreta');
+  }
+
+  exists(id) {
+    throw new Error('IService.exists() debe ser implementado por la clase concreta');
+  }
+
+  clear() {
+    throw new Error('IService.clear() debe ser implementado por la clase concreta');
+  }
 }
+IService.METADATA = {
+  version: '1.0.0',
+  permissions: {
+    read: ['user', 'admin'],
+    write: ['admin'],
+    delete: ['admin']
+  },
+  sla: {
+    maxResponseTime: 200,
+    availability: 99.9
+  },
+  dataFormats: ['application/json'],
+  errors: {
+    ValidationError: 'Datos de entrada inválidos',
+    NotFoundError: 'Recurso no encontrado',
+    PermissionError: 'Permisos insuficientes'
+  }
+};
 
 module.exports = IService;

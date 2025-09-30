@@ -1,25 +1,23 @@
-// Clase para manejar usuarios del sistema
 class UserService {
   constructor() {
-    // Usuarios hardcodeados para la demo
     this.users = [
-      { 
-        id: 1, 
-        username: 'alice', 
-        password: 'alicepass', 
-        roles: ['user'] 
+      {
+        id: 1,
+        username: 'alice',
+        password: 'alicepass',
+        roles: ['user']
       },
-      { 
-        id: 2, 
-        username: 'bob', 
-        password: 'bobpass', 
-        roles: ['user', 'admin'] 
+      {
+        id: 2,
+        username: 'bob',
+        password: 'bobpass',
+        roles: ['user', 'admin']
       }
     ];
   }
 
   findByCredentials(username, password) {
-    return this.users.find(user => 
+    return this.users.find(user =>
       user.username === username && user.password === password
     );
   }

@@ -1,7 +1,7 @@
 {
   "name": "adnis-ut2-variant",
   "version": "1.0.0",
-  "main": "src/index.js",
+  "main": "index.js",
   "license": "MIT",
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -11,7 +11,7 @@
     "jsonwebtoken": "^9.0.0"
   },
   "scripts": {
-    "start": "node src/index.js"
+    "start": "node index.js"
   }
 }
 
