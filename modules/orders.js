@@ -1,13 +1,15 @@
-// Módulo de órdenes
 require('dotenv').config();
 
 const express = require('express');
 const router = express.Router();
 const { authenticateJWT, authorizeRoles, authorizeCustomersOnly } = require('../auth');
+const IOrdersService = require('./IOrdersService');
 
 const SECRET = process.env.JWT_SECRET;
 
-// Datos hardcodeados internos del módulo de órdenes
+const { ProductsService } = require('./Products');
+const ClientsService = require('./ClientsService');
+
 const ordersData = [
   { 
     id: 1, 
@@ -25,11 +27,21 @@ const ordersData = [
   }
 ];
 
-// Funciones internas para manejar órdenes
-const OrdersService = {
-  getAll: () => ordersData,
-  getById: (id) => {
-    const order = ordersData.find(o => o.id == id);
+class OrdersService extends IOrdersService {
+  constructor() {
+    super();
+    // Pasar los datos específicos de órdenes a la clase base
+    this.data = ordersData;
+  }
+
+  getAll() {
+    // Usar implementación de la clase base
+    return super.getAll();
+  }
+
+  getById(id) {
+    // Sobrescribir para lógica específica de órdenes
+    const order = this.data.find(o => o.id == id);
     return order || { 
       id: parseInt(id), 
       clientId: 1, 
@@ -38,46 +50,139 @@ const OrdersService = {
       total: 300 
     };
   }
-};
 
-// Importar servicios de otros módulos para validaciones cruzadas
-const { ProductsService } = require('./products');
-const { ClientsService } = require('./clients');
+  create(data) {
+    const client = ClientsService.getById(data.clientId);
+    const products = data.productIds.map(id => ProductsService.getById(id));
+    
+    if (!client || products.some(p => !p)) {
+      throw new Error('Cliente o producto inválido');
+    }
+    
+    const total = this.calculateTotal(data.productIds);
+    
+    const newOrder = {
+      id: Date.now(),
+      clientId: data.clientId,
+      productIds: data.productIds,
+      date: new Date().toISOString(),
+      total,
+      client: client.name,
+      products: products.map(p => ({ id: p.id, name: p.name, price: p.price }))
+    };
+    
+    return newOrder;
+  }
 
-// Simulación de servicios sin estado: no se almacena el estado de las órdenes
+  update(id, data) {
+    // Usar implementación de la clase base
+    return super.update(id, data);
+  }
 
-// Obtener todas las órdenes (solo admins)
+  delete(id) {
+    // Usar implementación de la clase base
+    return super.delete(id);
+  }
+
+  getByClientId(clientId) {
+    return this.data.filter(o => o.clientId == clientId);
+  }
+
+  getByDateRange(startDate, endDate) {
+    return this.data.filter(o => {
+      const orderDate = new Date(o.date);
+      return orderDate >= new Date(startDate) && orderDate <= new Date(endDate);
+    });
+  }
+
+  calculateTotal(productIds) {
+    const products = productIds.map(id => ProductsService.getById(id));
+    return products.reduce((sum, product) => sum + (product ? product.price : 0), 0);
+  }
+}
+
+const ordersServiceInstance = new OrdersService();
+
 router.get('/', authenticateJWT(SECRET), authorizeRoles('admin'), (req, res) => {
-  res.json(OrdersService.getAll());
+  res.json(ordersServiceInstance.getAll());
 });
 
-// Crear orden (solo clientes, no admins)
 router.post('/', authenticateJWT(SECRET), authorizeCustomersOnly(), (req, res) => {
   const { clientId, productIds } = req.body;
   if (!clientId || !productIds || !Array.isArray(productIds) || productIds.length === 0) {
     return res.status(400).json({ error: 'ClientId y productIds son requeridos' });
   }
   
-  // Validar cliente y productos usando los servicios internos
-  const client = ClientsService.getById(clientId);
-  const products = productIds.map(id => ProductsService.getById(id));
-  if (!client || products.some(p => !p)) {
-    return res.status(400).json({ error: 'Cliente o producto inválido' });
+  try {
+    const newOrder = ordersServiceInstance.create({ clientId, productIds });
+    res.status(201).json(newOrder);
+  } catch (error) {
+    return res.status(400).json({ error: error.message });
   }
-  
-  // Calcular total de la orden
-  const total = products.reduce((sum, product) => sum + product.price, 0);
-  
-  const newOrder = {
-    id: Date.now(),
-    clientId,
-    productIds,
-    date: new Date().toISOString(),
-    total,
-    client: client.name,
-    products: products.map(p => ({ id: p.id, name: p.name, price: p.price }))
-  };
-  res.status(201).json(newOrder);
+});
+
+router.get('/client/:clientId', authenticateJWT(SECRET), authorizeRoles('admin'), (req, res) => {
+  const { clientId } = req.params;
+  const orders = ordersServiceInstance.getByClientId(clientId);
+  res.json(orders);
+});
+
+router.get('/date-range/:startDate/:endDate', authenticateJWT(SECRET), authorizeRoles('admin'), (req, res) => {
+  const { startDate, endDate } = req.params;
+  try {
+    const orders = ordersServiceInstance.getByDateRange(startDate, endDate);
+    res.json(orders);
+  } catch (error) {
+    return res.status(400).json({ error: 'Formato de fecha inválido' });
+  }
+});
+
+router.post('/calculate-total', authenticateJWT(SECRET), (req, res) => {
+  const { productIds } = req.body;
+  if (!productIds || !Array.isArray(productIds)) {
+    return res.status(400).json({ error: 'productIds debe ser un array' });
+  }
+  try {
+    const total = ordersServiceInstance.calculateTotal(productIds);
+    res.json({ total, productIds });
+  } catch (error) {
+    return res.status(400).json({ error: error.message });
+  }
+});
+
+router.get('/:id', authenticateJWT(SECRET), authorizeRoles('admin'), (req, res) => {
+  const { id } = req.params;
+  const order = ordersServiceInstance.getById(id);
+  res.json(order);
+});
+
+// Obtener estadísticas de órdenes (solo admins)
+router.get('/stats/revenue', authenticateJWT(SECRET), authorizeRoles('admin'), (req, res) => {
+  const totalRevenue = ordersServiceInstance.getTotalRevenue();
+  res.json({ totalRevenue, timestamp: new Date().toISOString() });
+});
+
+// Obtener órdenes de hoy (solo admins)
+router.get('/stats/today', authenticateJWT(SECRET), authorizeRoles('admin'), (req, res) => {
+  const todayOrders = ordersServiceInstance.getOrdersToday();
+  res.json({ 
+    orders: todayOrders, 
+    count: todayOrders.length,
+    date: new Date().toISOString().split('T')[0]
+  });
+});
+
+// Obtener conteo de órdenes por cliente (solo admins)
+router.get('/stats/client/:clientId/count', authenticateJWT(SECRET), authorizeRoles('admin'), (req, res) => {
+  const { clientId } = req.params;
+  const orderCount = ordersServiceInstance.getClientOrderCount(clientId);
+  res.json({ 
+    clientId: parseInt(clientId), 
+    orderCount,
+    timestamp: new Date().toISOString()
+  });
 });
 
 module.exports = router;
+module.exports.OrdersService = ordersServiceInstance;
+module.exports.OrdersServiceClass = OrdersService;

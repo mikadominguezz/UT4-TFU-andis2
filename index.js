@@ -48,14 +48,16 @@ if (cluster.isMaster) {
   });
 
   // Importar módulos
-  const productsRouter = require('./modules/products');
-  const clientsRouter = require('./modules/clients');
-  const ordersRouter = require('./modules/orders');
+  const productsRouter = require('./modules/Products');
+  const clientsRouter = require('./modules/Clients');
+  const ordersRouter = require('./modules/Orders');
+  const adminRouter = require('./modules/Admin');
 
   // Definir rutas mínimas REST
   app.use('/products', productsRouter);
   app.use('/clients', clientsRouter);
   app.use('/orders', ordersRouter);
+  app.use('/admin', adminRouter);
 
   app.get('/', (req, res) => {
     res.send('Mini e-commerce API funcionando');

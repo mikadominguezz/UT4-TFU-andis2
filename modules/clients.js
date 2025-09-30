@@ -1,43 +1,32 @@
-// Módulo de clientes
+// Router para endpoints públicos de clientes
 require('dotenv').config();
 
 const express = require('express');
 const router = express.Router();
-const { authenticateJWT, authorizeRoles } = require('../auth');
+const { authenticateJWT } = require('../auth');
+const ClientsService = require('./ClientsService');
 
 const SECRET = process.env.JWT_SECRET;
 
-// Datos hardcodeados internos del módulo de clientes
-const clientsData = [
-  { id: 1, name: 'Cliente Uno' },
-  { id: 2, name: 'Cliente Dos' }
-];
+// Endpoints públicos relacionados con clientes (información básica)
 
-// Funciones internas para manejar clientes
-const ClientsService = {
-  getAll: () => clientsData,
-  getById: (id) => {
-    const client = clientsData.find(c => c.id == id);
-    return client || { id: parseInt(id), name: `Cliente ${id}` };
-  }
-};
-
-// Obtener todos los clientes (solo admins)
-router.get('/', authenticateJWT(SECRET), authorizeRoles('admin'), (req, res) => {
-  res.json(ClientsService.getAll());
+// Obtener información básica de cliente (para usuarios autenticados)
+router.get('/:id/info', authenticateJWT(SECRET), (req, res) => {
+  const { id } = req.params;
+  const client = ClientsService.getById(id);
+  // Retornar solo información básica (sin datos sensibles)
+  res.json({
+    id: client.id,
+    name: client.name
+  });
 });
 
-// Crear cliente (solo admins)
-router.post('/', authenticateJWT(SECRET), authorizeRoles('admin'), (req, res) => {
-  const { name } = req.body;
-  if (!name) {
-    return res.status(400).json({ error: 'Nombre es requerido' });
-  }
-  // En un servicio sin estado, la creación no modifica el estado local
-  const newClient = { id: Date.now(), name };
-  res.status(201).json(newClient);
+// Verificar si un cliente existe (para validaciones de órdenes)
+router.get('/:id/exists', authenticateJWT(SECRET), (req, res) => {
+  const { id } = req.params;
+  const client = ClientsService.getById(id);
+  res.json({ exists: !!client, id: parseInt(id) });
 });
 
-// Exportar tanto el router como el servicio para uso interno
 module.exports = router;
 module.exports.ClientsService = ClientsService;
