@@ -5,14 +5,26 @@ const express = require('express');
 const router = express.Router();
 const { authenticateJWT, authorizeRoles } = require('../auth');
 
-// Simulación de servicios sin estado: los datos se obtienen de la interfaz
-const { ProductsInterface } = require('./interfaces');
-
 const SECRET = process.env.JWT_SECRET;
+
+// Datos hardcodeados internos del módulo de productos
+const productsData = [
+  { id: 1, name: 'Producto A', price: 100 },
+  { id: 2, name: 'Producto B', price: 200 }
+];
+
+// Funciones internas para manejar productos
+const ProductsService = {
+  getAll: () => productsData,
+  getById: (id) => {
+    const product = productsData.find(p => p.id == id);
+    return product || { id: parseInt(id), name: `Producto ${id}`, price: 100 * id };
+  }
+};
 
 // Obtener todos los productos (requiere autenticación)
 router.get('/', authenticateJWT(SECRET), (req, res) => {
-  res.json(ProductsInterface.getAll());
+  res.json(ProductsService.getAll());
 });
 
 // Crear producto (solo admins)
@@ -35,4 +47,6 @@ router.put('/:id', authenticateJWT(SECRET), authorizeRoles('admin'), (req, res) 
   res.json(updated);
 });
 
+// Exportar tanto el router como el servicio para uso interno
 module.exports = router;
+module.exports.ProductsService = ProductsService;

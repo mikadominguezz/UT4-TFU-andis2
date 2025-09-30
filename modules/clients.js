@@ -5,14 +5,26 @@ const express = require('express');
 const router = express.Router();
 const { authenticateJWT, authorizeRoles } = require('../auth');
 
-// Simulación de servicios sin estado: los datos se obtienen de la interfaz
-const { ClientsInterface } = require('./interfaces');
-
 const SECRET = process.env.JWT_SECRET;
+
+// Datos hardcodeados internos del módulo de clientes
+const clientsData = [
+  { id: 1, name: 'Cliente Uno' },
+  { id: 2, name: 'Cliente Dos' }
+];
+
+// Funciones internas para manejar clientes
+const ClientsService = {
+  getAll: () => clientsData,
+  getById: (id) => {
+    const client = clientsData.find(c => c.id == id);
+    return client || { id: parseInt(id), name: `Cliente ${id}` };
+  }
+};
 
 // Obtener todos los clientes (solo admins)
 router.get('/', authenticateJWT(SECRET), authorizeRoles('admin'), (req, res) => {
-  res.json(ClientsInterface.getAll());
+  res.json(ClientsService.getAll());
 });
 
 // Crear cliente (solo admins)
@@ -26,4 +38,6 @@ router.post('/', authenticateJWT(SECRET), authorizeRoles('admin'), (req, res) =>
   res.status(201).json(newClient);
 });
 
+// Exportar tanto el router como el servicio para uso interno
 module.exports = router;
+module.exports.ClientsService = ClientsService;

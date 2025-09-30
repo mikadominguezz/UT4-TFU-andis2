@@ -1,42 +1,22 @@
 // Interfaces para interacción entre módulos
+// Estas interfaces definen los contratos, pero cada módulo maneja sus propios datos
 
-// Interface para acceder a productos
+// Interface para acceder a productos - solo define el contrato
 const ProductsInterface = {
-  getAll: () => [
-    { id: 1, name: 'Producto A', price: 100 },
-    { id: 2, name: 'Producto B', price: 200 }
-  ],
-  getById: (id) => ({ id, name: `Producto ${id}`, price: 100 * id })
+  getAll: null, // Será implementado por el módulo products
+  getById: null // Será implementado por el módulo products
 };
 
-// Interface para acceder a clientes
+// Interface para acceder a clientes - solo define el contrato
 const ClientsInterface = {
-  getAll: () => [
-    { id: 1, name: 'Cliente Uno' },
-    { id: 2, name: 'Cliente Dos' }
-  ],
-  getById: (id) => ({ id, name: `Cliente ${id}` })
+  getAll: null, // Será implementado por el módulo clients
+  getById: null // Será implementado por el módulo clients
 };
 
-// Interface para acceder a órdenes
+// Interface para acceder a órdenes - solo define el contrato
 const OrdersInterface = {
-  getAll: () => [
-    { 
-      id: 1, 
-      clientId: 1, 
-      productIds: [1, 2], 
-      date: '2024-09-01T10:30:00Z',
-      total: 300
-    },
-    { 
-      id: 2, 
-      clientId: 2, 
-      productIds: [1], 
-      date: '2024-09-15T14:45:00Z',
-      total: 100
-    }
-  ],
-  getById: (id) => ({ id, clientId: 1, productIds: [1,2], date: new Date().toISOString(), total: 300 })
+  getAll: null, // Será implementado por el módulo orders
+  getById: null // Será implementado por el módulo orders
 };
 
 module.exports = { ProductsInterface, ClientsInterface, OrdersInterface };

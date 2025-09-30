@@ -168,10 +168,10 @@ Mermaid Code:
 ---
 ### Descripción de componentes
 - API REST: Recibe las peticiones y las envía al módulo correspondiente. Utiliza clustering con 8 workers para escalabilidad horizontal.
-- Módulo Productos: Maneja la información de los productos.
-- Módulo Clientes: Maneja la información de los clientes.
-- Módulo Órdenes: Crea y muestra las órdenes usando datos de productos y clientes.
-- Interfaces: Permiten que los módulos se comuniquen entre sí.
+- Módulo Productos: Maneja sus propios datos hardcodeados de productos y expone servicios internos.
+- Módulo Clientes: Maneja sus propios datos hardcodeados de clientes y expone servicios internos.
+- Módulo Órdenes: Maneja sus propios datos hardcodeados de órdenes y utiliza servicios de otros módulos para validaciones.
+- Interfaces: Definen contratos entre módulos pero no contienen datos (cada módulo es responsable de sus datos).
 
 ---
 ### Justificación de partición de primer nivel
