@@ -1,3 +1,5 @@
+// Shim: forward to src/index.js so old entry points keep working
+require('./src/index');
 // Cargar variables de entorno
 require('dotenv').config();
 
