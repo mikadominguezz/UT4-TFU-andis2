@@ -11,17 +11,17 @@ const { ProductsService } = require('./Products');
 const ClientsService = require('./ClientsService');
 
 const ordersData = [
-  { 
-    id: 1, 
-    clientId: 1, 
-    productIds: [1, 2], 
+  {
+    id: 1,
+    clientId: 1,
+    productIds: [1, 2],
     date: '2024-09-01T10:30:00Z',
     total: 300
   },
-  { 
-    id: 2, 
-    clientId: 2, 
-    productIds: [1], 
+  {
+    id: 2,
+    clientId: 2,
+    productIds: [1],
     date: '2024-09-15T14:45:00Z',
     total: 100
   }
@@ -30,37 +30,37 @@ const ordersData = [
 class OrdersService extends IOrdersService {
   constructor() {
     super();
-    // Pasar los datos específicos de órdenes a la clase base
+
     this.data = ordersData;
   }
 
   getAll() {
-    // Usar implementación de la clase base
+
     return super.getAll();
   }
 
   getById(id) {
-    // Sobrescribir para lógica específica de órdenes
+
     const order = this.data.find(o => o.id == id);
-    return order || { 
-      id: parseInt(id), 
-      clientId: 1, 
-      productIds: [1,2], 
-      date: new Date().toISOString(), 
-      total: 300 
+    return order || {
+      id: parseInt(id),
+      clientId: 1,
+      productIds: [1,2],
+      date: new Date().toISOString(),
+      total: 300
     };
   }
 
   create(data) {
     const client = ClientsService.getById(data.clientId);
     const products = data.productIds.map(id => ProductsService.getById(id));
-    
+
     if (!client || products.some(p => !p)) {
       throw new Error('Cliente o producto inválido');
     }
-    
+
     const total = this.calculateTotal(data.productIds);
-    
+
     const newOrder = {
       id: Date.now(),
       clientId: data.clientId,
@@ -70,17 +70,17 @@ class OrdersService extends IOrdersService {
       client: client.name,
       products: products.map(p => ({ id: p.id, name: p.name, price: p.price }))
     };
-    
+
     return newOrder;
   }
 
   update(id, data) {
-    // Usar implementación de la clase base
+
     return super.update(id, data);
   }
 
   delete(id) {
-    // Usar implementación de la clase base
+
     return super.delete(id);
   }
 
@@ -112,7 +112,7 @@ router.post('/', authenticateJWT(SECRET), authorizeCustomersOnly(), (req, res) =
   if (!clientId || !productIds || !Array.isArray(productIds) || productIds.length === 0) {
     return res.status(400).json({ error: 'ClientId y productIds son requeridos' });
   }
-  
+
   try {
     const newOrder = ordersServiceInstance.create({ clientId, productIds });
     res.status(201).json(newOrder);
@@ -155,29 +155,23 @@ router.get('/:id', authenticateJWT(SECRET), authorizeRoles('admin'), (req, res) 
   const order = ordersServiceInstance.getById(id);
   res.json(order);
 });
-
-// Obtener estadísticas de órdenes (solo admins)
 router.get('/stats/revenue', authenticateJWT(SECRET), authorizeRoles('admin'), (req, res) => {
   const totalRevenue = ordersServiceInstance.getTotalRevenue();
   res.json({ totalRevenue, timestamp: new Date().toISOString() });
 });
-
-// Obtener órdenes de hoy (solo admins)
 router.get('/stats/today', authenticateJWT(SECRET), authorizeRoles('admin'), (req, res) => {
   const todayOrders = ordersServiceInstance.getOrdersToday();
-  res.json({ 
-    orders: todayOrders, 
+  res.json({
+    orders: todayOrders,
     count: todayOrders.length,
     date: new Date().toISOString().split('T')[0]
   });
 });
-
-// Obtener conteo de órdenes por cliente (solo admins)
 router.get('/stats/client/:clientId/count', authenticateJWT(SECRET), authorizeRoles('admin'), (req, res) => {
   const { clientId } = req.params;
   const orderCount = ordersServiceInstance.getClientOrderCount(clientId);
-  res.json({ 
-    clientId: parseInt(clientId), 
+  res.json({
+    clientId: parseInt(clientId),
     orderCount,
     timestamp: new Date().toISOString()
   });

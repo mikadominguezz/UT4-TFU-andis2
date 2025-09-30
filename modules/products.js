@@ -17,17 +17,17 @@ const productsData = [
 class ProductsService extends IProductsService {
   constructor() {
     super();
-    // Pasar los datos específicos de productos a la clase base
+
     this.data = productsData;
   }
 
   getAll() {
-    // Usar implementación de la clase base
+
     return super.getAll();
   }
 
   getById(id) {
-    // Sobrescribir para lógica específica de productos
+
     const product = this.data.find(p => p.id == id);
     return product || { id: parseInt(id), name: `Producto ${id}`, price: 100 * id, category: 'general' };
   }
@@ -43,17 +43,17 @@ class ProductsService extends IProductsService {
   }
 
   update(id, data) {
-    // Usar implementación de la clase base
+
     return super.update(id, data);
   }
 
   delete(id) {
-    // Usar implementación de la clase base
+
     return super.delete(id);
   }
 
   getByCategory(category) {
-    return this.data.filter(p => 
+    return this.data.filter(p =>
       p.category && p.category.toLowerCase() === category.toLowerCase()
     );
   }
@@ -111,21 +111,15 @@ router.patch('/:id/price', authenticateJWT(SECRET), authorizeRoles('admin'), (re
     return res.status(400).json({ error: error.message });
   }
 });
-
-// Obtener productos por rango de precio
 router.get('/price/:minPrice/:maxPrice', authenticateJWT(SECRET), (req, res) => {
   const { minPrice, maxPrice } = req.params;
   const products = productsServiceInstance.getByPriceRange(minPrice, maxPrice);
   res.json(products);
 });
-
-// Obtener todas las categorías disponibles
 router.get('/categories', authenticateJWT(SECRET), (req, res) => {
   const categories = productsServiceInstance.getCategories();
   res.json(categories);
 });
-
-// Buscar productos por nombre
 router.get('/search/:searchTerm', authenticateJWT(SECRET), (req, res) => {
   const { searchTerm } = req.params;
   const products = productsServiceInstance.searchByName(searchTerm);
