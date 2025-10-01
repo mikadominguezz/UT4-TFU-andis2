@@ -19,7 +19,7 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://techmart-mongo:27017/prod
 
 router.get('/', authenticateJWT(SECRET), async (req, res) => {
   try {
-    const products = await ProductsService.getAll();
+    const products = await ProductsService.getProducts();
     res.json(products);
   } catch (error) {
     console.error('Error fetching products:', error);
