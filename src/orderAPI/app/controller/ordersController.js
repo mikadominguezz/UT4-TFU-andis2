@@ -98,4 +98,14 @@ router.get('/health', (req, res) => {
   res.status(200).json({ status: 'Orders API is healthy' });
 });
 
+router.get('/order/:id', async (req, res) => {
+  try {
+    const orderId = req.params.id;
+    const orderInfo = await OrdersService.getOrderInfo(orderId);
+    res.status(200).json(orderInfo);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch order info', details: error.message });
+  }
+});
+
 module.exports = router;

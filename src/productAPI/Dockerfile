@@ -5,13 +5,16 @@ FROM node:16
 WORKDIR /usr/src/app
 
 # Copy package.json and package-lock.json
-COPY package*.json ./
+COPY src/productAPI/package*.json ./
 
 # Install dependencies
 RUN npm install
 
+# Copy proto files
+COPY proto /app/proto
+
 # Copy the rest of the application code
-COPY . .
+COPY src/productAPI .
 
 # Expose the port the app runs on
 EXPOSE 3003

@@ -108,4 +108,15 @@ router.get('/health', (req, res) => {
   res.status(200).json({ status: 'Admin API is healthy' });
 });
 
+// New endpoint to call the gRPC service method getAdminInfo
+router.get('/admin/:id', async (req, res) => {
+  try {
+    const adminId = req.params.id;
+    const adminInfo = await AdminService.getAdminInfo(adminId);
+    res.status(200).json(adminInfo);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch admin info', details: error.message });
+  }
+});
+
 module.exports = router;

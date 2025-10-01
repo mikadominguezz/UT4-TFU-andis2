@@ -39,8 +39,8 @@ services:
 
   admin-api:
     build:
-      context: ./src/adminAPI
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./src/adminAPI/Dockerfile
     ports:
       - "3001:3001"
     env_file:
@@ -55,8 +55,8 @@ services:
 
   client-api:
     build:
-      context: ./src/clientAPI
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./src/clientAPI/Dockerfile
     ports:
       - "3002:3002"
     env_file:
@@ -71,8 +71,8 @@ services:
 
   products-api:
     build:
-      context: ./src/productAPI
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./src/productAPI/Dockerfile
     ports:
       - "3003:3003"
     env_file:
@@ -87,8 +87,8 @@ services:
 
   orders-api:
     build:
-      context: ./src/orderAPI
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./src/orderAPI/Dockerfile
     ports:
       - "3004:3004"
     env_file:
