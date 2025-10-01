@@ -30,6 +30,58 @@ services:
     networks:
       - techmart-network
 
+  admin-api:
+    build:
+      context: ./src/adminAPI
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      - MONGO_URI=mongodb://mongodb:27017/admin
+    depends_on:
+      - mongodb
+    networks:
+      - techmart-network
+
+  client-api:
+    build:
+      context: ./src/clientAPI
+      dockerfile: Dockerfile
+    ports:
+      - "3002:3002"
+    environment:
+      - MONGO_URI=mongodb://mongodb:27017/clients
+    depends_on:
+      - mongodb
+    networks:
+      - techmart-network
+
+  products-api:
+    build:
+      context: ./src/productAPI
+      dockerfile: Dockerfile
+    ports:
+      - "3003:3003"
+    environment:
+      - MONGO_URI=mongodb://mongodb:27017/products
+    depends_on:
+      - mongodb
+    networks:
+      - techmart-network
+
+  orders-api:
+    build:
+      context: ./src/orderAPI
+      dockerfile: Dockerfile
+    ports:
+      - "3004:3004"
+    environment:
+      - MONGO_URI=mongodb://mongodb:27017/orders
+    depends_on:
+      - mongodb
+    networks:
+      - techmart-network
+
 volumes:
   mongodb_data:
     driver: local

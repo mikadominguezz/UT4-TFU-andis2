@@ -5,12 +5,12 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const jwt = require('jsonwebtoken');
 const { authenticateJWT, authorizeRoles } = require('./src/middleware/auth');
-const UserService = require('./src/services/userService');
-
-const userService = new UserService();
 
 const PORT = process.env.PORT || 3000;
 const SECRET = process.env.JWT_SECRET;
+
+const db = require('./src/database');
+db.connect();
 
 if (cluster.isMaster || cluster.isPrimary) {
   const workers = parseInt(process.env.WEB_CONCURRENCY) || 2;
@@ -31,31 +31,17 @@ if (cluster.isMaster || cluster.isPrimary) {
     const app = await createApp();
 
     app.use(express.static('public'));
-    
+
     app.post('/login', (req, res) => {
       const { username, password } = req.body;
-      const user = userService.findByCredentials(username, password);
-
-      if (!user) {
-        return res.status(401).json({ error: 'Credenciales inválidas' });
-      }
-
-      const token = jwt.sign(
-        { sub: user.id, username: user.username, roles: user.roles },
-        SECRET,
-        { expiresIn: '1h' }
-      );
-
-      res.json({ 
-        token,
-        user: { id: user.id, username: user.username, roles: user.roles }
-      });
+      // Remove userService logic
+      return res.status(501).json({ error: 'Funcionalidad no implementada' });
     });
 
-    const productsController = require('./src/controllers/productsController');
-    const clientsController = require('./src/controllers/clientsController');
-    const ordersController = require('./src/controllers/ordersController');
-    const adminController = require('./src/controllers/adminController');
+    const productsController = require('./src/productAPI/app/controller/productsController');
+    const clientsController = require('./src/clientAPI/app/controller/clientsController');
+    const ordersController = require('./src/orderAPI/app/controller/ordersController');
+    const adminController = require('./src/adminAPI/app/controller/adminController');
     
     app.use('/api/products', productsController);
     app.use('/api/clients', clientsController);

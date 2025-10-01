@@ -1,47 +1,127 @@
-require('dotenv').config();
-
 const express = require('express');
-const bodyParser = require('body-parser');
-const cors = require('cors');
-const database = require('./config/database');
-
-const productsController = require('./controllers/productsController');
-const clientsController = require('./controllers/clientsController');
-const ordersController = require('./controllers/ordersController');
-const adminController = require('./controllers/adminController');
+const axios = require('axios');
+const jwt = require('jsonwebtoken');
 
 async function createApp() {
   const app = express();
-  app.use(bodyParser.json());
+  app.use(express.json());
 
-  app.use(cors({
-    origin: 'http://localhost:3000',
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    credentials: true
-  }));
+  // Middleware de autenticación JWT
+  function authenticateJWT(secret) {
+    return (req, res, next) => {
+      const token = req.headers['authorization']?.split(' ')[1];
 
-  try {
-    await database.connect();
-    console.log('🚀 TechMart API iniciada con MongoDB');
-  } catch (error) {
-    console.error('❌ Error conectando a MongoDB:', error);
-    process.exit(1);
+      if (!token) {
+        return res.sendStatus(401);
+      }
+
+      jwt.verify(token, secret, (err, user) => {
+        if (err) {
+          return res.sendStatus(403);
+        }
+
+        req.user = user;
+        next();
+      });
+    };
   }
 
-  app.use(express.static('public'));
-
-  app.get('/health', (req, res) => res.json({ ok: true, pid: process.pid }));
-
-  app.use('/products', productsController);
-  app.use('/clients', clientsController);
-  app.use('/orders', ordersController);
-  app.use('/admin', adminController);
-
-  app.get('/', (req, res) => {
-    res.send('Mini e-commerce API funcionando');
+  // 👉 Rutas hacia microservicio de Productos
+  app.get('/products', async (req, res) => {
+    try {
+      const response = await axios.get('http://products:3001/products');
+      res.json(response.data);
+    } catch (err) {
+      console.error('❌ Error al obtener productos:', err.message);
+      res.status(500).json({ error: 'No se pudieron obtener los productos' });
+    }
   });
 
-  app.get('/public', (req, res) => res.json({ message: 'Recurso público', pid: process.pid }));
+  app.post('/products', async (req, res) => {
+    try {
+      const response = await axios.post('http://products:3001/products', req.body);
+      res.json(response.data);
+    } catch (err) {
+      console.error('❌ Error al crear producto:', err.message);
+      res.status(500).json({ error: 'No se pudo crear el producto' });
+    }
+  });
+
+  // Ruta para obtener productos con autenticación
+  app.get('/products', authenticateJWT(process.env.JWT_SECRET), (req, res) => {
+    const products = [
+      { id: 1, name: 'Product A', price: 100 },
+      { id: 2, name: 'Product B', price: 200 }
+    ];
+
+    res.status(200).json(products);
+  });
+
+  // 👉 Rutas hacia microservicio de Órdenes
+  app.get('/orders', async (req, res) => {
+    try {
+      const response = await axios.get('http://orders:3003/orders');
+      res.json(response.data);
+    } catch (err) {
+      console.error('❌ Error al obtener órdenes:', err.message);
+      res.status(500).json({ error: 'No se pudieron obtener las órdenes' });
+    }
+  });
+
+  app.post('/orders', async (req, res) => {
+    try {
+      const response = await axios.post('http://orders:3003/orders', req.body);
+      res.json(response.data);
+    } catch (err) {
+      console.error('❌ Error al crear orden:', err.message);
+      res.status(500).json({ error: 'No se pudo crear la orden' });
+    }
+  });
+
+  // 👉 Rutas hacia microservicio de Usuarios
+  app.get('/users', async (req, res) => {
+    try {
+      const response = await axios.get('http://users:3002/users');
+      res.json(response.data);
+    } catch (err) {
+      console.error('❌ Error al obtener usuarios:', err.message);
+      res.status(500).json({ error: 'No se pudieron obtener los usuarios' });
+    }
+  });
+
+  app.post('/users', async (req, res) => {
+    try {
+      const response = await axios.post('http://users:3002/users', req.body);
+      res.json(response.data);
+    } catch (err) {
+      console.error('❌ Error al crear usuario:', err.message);
+      res.status(500).json({ error: 'No se pudo crear el usuario' });
+    }
+  });
+
+  // Ruta de health check
+  app.get('/health', (req, res) => {
+    res.status(200).json({ status: 'App is running' });
+  });
+
+  // Ruta para login
+  app.post('/login', (req, res) => {
+    const { username, password } = req.body;
+
+    const users = [
+      { username: 'alice', password: 'alicepass' },
+      { username: 'bob', password: 'bobpass' }
+    ];
+
+    const user = users.find(u => u.username === username && u.password === password);
+
+    if (!user) {
+      return res.status(401).json({ error: 'Credenciales inválidas' });
+    }
+
+    const token = jwt.sign({ username: user.username }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    res.status(200).json({ token });
+  });
 
   return app;
 }
