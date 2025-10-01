@@ -60,6 +60,20 @@ class AdminService {
     }
   }
 
+  // Product management methods
+  async createProduct(productData) {
+    try {
+      // For simplicity, we'll create products directly in the admin service
+      // Import Product schema directly (they share the same database)
+      const Product = require('../../productAPI/app/schema/ProductSchema');
+      const product = new Product(productData);
+      return await product.save();
+    } catch (error) {
+      console.error('Service Error - createProduct:', error);
+      throw error;
+    }
+  }
+
   // gRPC method to get admin info
   getAdminInfo(adminId) {
     return new Promise((resolve, reject) => {

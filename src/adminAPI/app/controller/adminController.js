@@ -54,6 +54,21 @@ router.put('/clients/:id', authenticateJWT(SECRET), authorizeRoles('admin'), asy
   }
 });
 
+// Product management endpoints
+router.post('/products', authenticateJWT(SECRET), authorizeRoles('admin'), async (req, res) => {
+  try {
+    const { name, price, description, category } = req.body;
+    if (!name || price === undefined) {
+      return res.status(400).json({ error: 'Faltan datos obligatorios (name, price)' });
+    }
+    const newProduct = await AdminService.createProduct({ name, price, description, category });
+    res.status(201).json(newProduct);
+  } catch (error) {
+    console.error('Controller Error - createProduct:', error);
+    res.status(500).json({ error: 'Error creating product' });
+  }
+});
+
 router.get('/health', (req, res) => {
   res.status(200).json({ status: 'Admin API is healthy' });
 });
