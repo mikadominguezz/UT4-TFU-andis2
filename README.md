@@ -180,12 +180,25 @@ POST http://localhost:8080/orders
 
 ---
 ### Justificación de partición de primer nivel
-La partición se realizó por dominio funcional (productos, clientes, órdenes) para facilitar escalabilidad, mantenimiento y despliegue independiente.
+El método elegido para la partición del sistema, centrado en los Dominios Funcionales (ej. Productos, Clientes, Órdenes), es la base de nuestra Arquitectura de Microservicios (implícita al usar un API Gateway y contenedores).
+
+- Autonomía y Cohesión:
+La partición se fundamenta en la alta cohesión funcional interna de cada dominio. Esto asegura que los cambios en un módulo (p. ej., la lógica de "Clientes") no requieran modificar otros módulos (p. ej., "Productos").
+
+- Escalabilidad Horizontal:
+Al aislar las funciones por dominio, se permite el escalado independiente (scaling independently). Por ejemplo, si el servicio de "Órdenes" experimenta picos de carga durante una promoción, podemos escalar solo ese módulo sin afectar o sobredimensionar los módulos de "Clientes" o "Productos".
+
+- Baja Fricción en Despliegue:
+La partición asegura que los equipos de desarrollo solo necesiten desplegar el código modificado de un solo dominio. Esto reduce el riesgo de errores de regresión en todo el sistema y mejora la velocidad del Time-to-Market(tiempo total que transcurre desde que se concibe una idea de funcionalidad (o una corrección de error) hasta que esa funcionalidad está disponible y utilizable por los clientes en el mercado (producción)).
 
 ---
 ### Proceso para encontrar los componentes
-Analizamos los requerimientos del dominio e-commerce e identificaron los módulos funcionales principales. Cada módulo expone interfaces para interacción y desacoplamiento.
-Elegimos utilizar partición por dominios, decisión que condicionó el resto del diseño, luego definimos las funciones principales y despues meditamos si necesitaban comunicarse entre si.
+El proceso de diseño para definir los componentes y su interacción siguió un enfoque centrado en el dominio (Domain-Driven Design), lo cual condicionó la estructura global del sistema.
+
+1. Análisis del Dominio y Partición
+Identificación del Dominio: Se analizaron los requisitos de negocio del e-commerce para mapear los límites del contexto acotado (Bounded Contexts). Esto implicó definir qué datos y lógica pertenecen intrínsecamente a "Productos", "Clientes" y "Órdenes". Esta partición es la decisión arquitectónica fundamental (Bass et al.).
+
+2. Partición Primaria: Se tomó la decisión de particionar por dominios funcionales, un enfoque que automáticamente determina los límites de los componentes de primer nivel. Esta elección se hizo para maximizar la cohesión (Richards & Ford).
 
 
 ---
@@ -200,12 +213,8 @@ La diferencia principal es el aislamiento. Una Máquina Virtual tiene su propio 
 
 Justificación tomando como referencia a Bass, Clements, & Kazman: De esta forma se permite que el Contenedor sea una unidad de despliegue mínima y ultra-rápida. Cuando su sistema necesita más capacidad (detectado por el API Gateway), un nuevo contenedor se inicia en segundos, ofreciendo una Elasticidad inmediata.
 
-2.  La clave de la Eficiencia: Autonomía Tecnológica
-Significa que cada parte de su sistema (cada servicio que usa el API Gateway) es independiente en su tecnología.
 
-Justificación tomando como referencia a Richards & Ford: El Contenedor aísla la tecnología. Esto permite que el servicio que maneja el index.js use Node.js, y otro servicio distinto (ej: un microservicio de pagos) pueda usar Python o Java, sin que sus dependencias (librerías) "choquen" o causen problemas en el mismo servidor host. Los autores Richards y Ford señalan que este desacoplamiento tecnológico es fundamental para que el proyecto pueda crecer y evolucionar sin estar atado a una única tecnología.
-
-3. La clave del Despliegue: Imágenes Inmutables
+2. La clave del Despliegue: Imágenes Inmutables
 ¿Qué es una Imagen Inmutable? Una imagen de Docker (su aplicación empaquetada) es como una "cápsula del tiempo" que contiene absolutamente todo lo que necesita la aplicación. Una vez creada, no se puede cambiar.
 
 Justificación (Rozanski & Woods): En las VMs, a menudo se aplican parches a una máquina en funcionamiento, lo que genera problemas difíciles de rastrear ("funcionaba en la VM 1, pero no en la VM 2"). El contenedor soluciona esto:
@@ -214,8 +223,8 @@ Fiabilidad: Si hay que actualizar, se crea una imagen nueva. Si falla, se hace u
 
 Consistencia de Entornos: La misma imagen funciona idénticamente en el entorno local (su PC) y en producción, simplificando la Perspectiva de Despliegue (Rozanski & Woods).
 
-4. La clave del Escalado: Mayor Densidad
-¿Por qué es más eficiente? Como los contenedores no cargan un SO completo, usted puede ejecutar muchos más contenedores (procesos de aplicación) en el mismo servidor que si usara VMs.
+3. La clave del Escalado: Mayor Densidad
+¿Por qué es más eficiente? Como los contenedores no cargan un SO completo, puede ejecutar muchos más contenedores (procesos de aplicación) en el mismo servidor que si usara VMs.
 
 Justificación (Bass, Clements, & Kazman): Una mayor densidad significa que el API Gateway tiene más instancias disponibles para repartir el trabajo. Esto reduce los costos de infraestructura y maximiza el Rendimiento del sistema, permitiendo que su aplicación maneje picos de tráfico de manera más económica y eficiente.
 
@@ -236,6 +245,24 @@ Es importante saber que para hacer escalamiento horizontal en Maquinas Virtuales
 No es necesario configurar a mano e instalar las herramientas dentro de cada maquina virtual que se cree. Basta con crear una plantilla y luego cuando el autoscalling del VMSS decida agregar más instancias, Azure generará nuevas VM a partir de esas plantillas.
 
 Al usar maquinas virtuales en vez de contenedores el despliegue sería más pesado y menos eficiente para escalar instancias rápidamente.
+
+---
+
+### gRPC (gRPC Remote Procedure Call)
+
+Mientras que el API Gateway gestiona la comunicación con los clientes externos (Ej. un navegador web o una aplicación móvil), gRPC se utiliza típicamente para la comunicación interna de alto rendimiento entre sus Microservicios (entre el Dominio "Clientes" y el Dominio "Órdenes").
+
+Desempeño Superior y Eficiencia de Recursos (Bass, Clements, & Kazman)
+Protocolo: gRPC usa HTTP/2 en lugar del tradicional HTTP/1.1 que usa REST. HTTP/2 permite:
+
+Multiplexación: Enviar múltiples peticiones y respuestas sobre una sola conexión TCP.
+
+Compresión de Encabezados: Reduce la sobrecarga de datos.
+
+Formato de Serialización: gRPC usa Protocol Buffers (Protobuf) para serializar los datos, que es un formato binario. Este formato es mucho más pequeño, rápido y eficiente que el formato de texto JSON que se usa en las API REST.
+
+Justificación Arquitectónica: En un entorno con Contenedores y Microservicios, donde el tráfico de red interno es masivo, el uso de gRPC maximiza el Rendimiento del sistema porque sus servicios pueden comunicarse con menos latencia y consumiendo menos ancho de banda.
+
 
 ---
 ### Kubernetes
