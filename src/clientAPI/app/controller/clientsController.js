@@ -76,4 +76,14 @@ router.get('/health', (req, res) => {
   res.status(200).json({ status: 'Clients API is healthy' });
 });
 
+router.get('/client/:id', async (req, res) => {
+  try {
+    const clientId = req.params.id;
+    const clientInfo = await ClientsService.getClientInfo(clientId);
+    res.status(200).json(clientInfo);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch client info', details: error.message });
+  }
+});
+
 module.exports = router;

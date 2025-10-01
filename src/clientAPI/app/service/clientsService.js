@@ -1,4 +1,18 @@
 const ClientsRepository = require('../repository/clientsRepository');
+const grpc = require('@grpc/grpc-js');
+const protoLoader = require('@grpc/proto-loader');
+
+const PROTO_PATH = '/app/proto/product.proto';
+const packageDefinition = protoLoader.loadSync(PROTO_PATH, {
+  keepCase: true,
+  longs: String,
+  enums: String,
+  defaults: true,
+  oneofs: true,
+});
+const clientProto = grpc.loadPackageDefinition(packageDefinition).ClientService;
+
+const client = new clientProto('localhost:50051', grpc.credentials.createInsecure());
 
 class ClientsService {
   
@@ -69,6 +83,18 @@ class ClientsService {
       console.error('Service Error - getClientStats:', error);
       throw new Error('Unable to fetch client statistics');
     }
+  }
+
+  async getClientInfo(clientId) {
+    return new Promise((resolve, reject) => {
+      client.GetClientInfo({ client_id: clientId }, (error, response) => {
+        if (error) {
+          reject(error);
+        } else {
+          resolve(response);
+        }
+      });
+    });
   }
 
   // Legacy methods for backward compatibility

@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+service ClientService {
+  rpc GetClientInfo (ClientRequest) returns (ClientResponse);
+}
+
+message ClientRequest {
+  string client_id = 1;
+}
+
+message ClientResponse {
+  string name = 1;
+  string email = 2;
+}

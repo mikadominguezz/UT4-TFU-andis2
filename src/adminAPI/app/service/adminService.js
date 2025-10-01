@@ -1,4 +1,18 @@
 const AdminRepository = require('../repository/adminRepository');
+const grpc = require('@grpc/grpc-js');
+const protoLoader = require('@grpc/proto-loader');
+
+const PROTO_PATH = '/app/proto/product.proto';
+const packageDefinition = protoLoader.loadSync(PROTO_PATH, {
+  keepCase: true,
+  longs: String,
+  enums: String,
+  defaults: true,
+  oneofs: true,
+});
+const adminProto = grpc.loadPackageDefinition(packageDefinition).AdminService;
+
+const client = new adminProto('localhost:50052', grpc.credentials.createInsecure());
 
 class AdminService {
   
@@ -93,6 +107,19 @@ class AdminService {
   bulkUpdateClients(clientIds, updateData) {
     // Mock implementation
     return { updated: clientIds.length, data: updateData };
+  }
+
+  // gRPC method to get admin info
+  getAdminInfo(adminId) {
+    return new Promise((resolve, reject) => {
+      client.GetAdminInfo({ admin_id: adminId }, (error, response) => {
+        if (error) {
+          reject(error);
+        } else {
+          resolve(response);
+        }
+      });
+    });
   }
 }
 

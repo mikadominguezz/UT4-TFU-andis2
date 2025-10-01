@@ -1,4 +1,18 @@
 const ProductsRepository = require('../repository/productsRepository');
+const grpc = require('@grpc/grpc-js');
+const protoLoader = require('@grpc/proto-loader');
+
+const PROTO_PATH = '/app/proto/product.proto';
+const packageDefinition = protoLoader.loadSync(PROTO_PATH, {
+  keepCase: true,
+  longs: String,
+  enums: String,
+  defaults: true,
+  oneofs: true,
+});
+const productProto = grpc.loadPackageDefinition(packageDefinition).ProductService;
+
+const client = new productProto('localhost:50054', grpc.credentials.createInsecure());
 
 class ProductsService {
   constructor(productsRepository) {
@@ -24,6 +38,18 @@ class ProductsService {
     const savedProduct = await this.productsRepository.saveProduct(productData);
     console.log('📦 Producto guardado:', savedProduct);
     return savedProduct;
+  }
+
+  getProductInfo(productId) {
+    return new Promise((resolve, reject) => {
+      client.GetProductInfo({ product_id: productId }, (error, response) => {
+        if (error) {
+          reject(error);
+        } else {
+          resolve(response);
+        }
+      });
+    });
   }
 }
 

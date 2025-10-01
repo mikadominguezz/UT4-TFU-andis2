@@ -46,12 +46,16 @@ router.get('/:id', authenticateJWT(SECRET), async (req, res) => {
   }
 });
 
-// Health check endpoint
-router.get('/health', (req, res) => {
-  res.status(200).json({ status: 'Products API is healthy' });
+// New endpoint to call the gRPC service method getProductInfo
+router.get('/product/:id', async (req, res) => {
+  try {
+    const productId = req.params.id;
+    const productInfo = await ProductsService.getProductInfo(productId);
+    res.status(200).json(productInfo);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch product info', details: error.message });
+  }
 });
-
-module.exports = router;
 
 // Health check endpoint
 router.get('/health', (req, res) => {

@@ -1,4 +1,18 @@
 const OrdersRepository = require('../repository/ordersRepository');
+const grpc = require('@grpc/grpc-js');
+const protoLoader = require('@grpc/proto-loader');
+
+const PROTO_PATH = '/app/proto/product.proto';
+const packageDefinition = protoLoader.loadSync(PROTO_PATH, {
+  keepCase: true,
+  longs: String,
+  enums: String,
+  defaults: true,
+  oneofs: true,
+});
+const orderProto = grpc.loadPackageDefinition(packageDefinition).OrderService;
+
+const client = new orderProto('localhost:50053', grpc.credentials.createInsecure());
 
 class OrdersService {
   
@@ -79,6 +93,18 @@ class OrdersService {
   getClientOrderCount(clientId) {
     // Basic mock implementation - in original it was synchronous
     return 0;
+  }
+
+  getOrderInfo(orderId) {
+    return new Promise((resolve, reject) => {
+      client.GetOrderInfo({ order_id: orderId }, (error, response) => {
+        if (error) {
+          reject(error);
+        } else {
+          resolve(response);
+        }
+      });
+    });
   }
 }
 
