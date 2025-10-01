@@ -1,8 +1,8 @@
-const OrdersRepository = require('../repository/ordersRepository');
+﻿const OrdersRepository = require('../repository/ordersRepository');
 const grpc = require('@grpc/grpc-js');
 const protoLoader = require('@grpc/proto-loader');
 
-const PROTO_PATH = '/app/proto/product.proto';
+const PROTO_PATH = '/app/proto/order.proto';
 const packageDefinition = protoLoader.loadSync(PROTO_PATH, {
   keepCase: true,
   longs: String,
@@ -38,21 +38,11 @@ class OrdersService {
     }
   }
 
-  async getOrdersByClientId(clientId) {
-    try {
-      return await OrdersRepository.getOrdersByClientId(clientId);
-    } catch (error) {
-      console.error('Service Error - getOrdersByClientId:', error);
-      throw new Error('Unable to fetch client orders');
-    }
-  }
-
   async saveOrder(orderData) {
     try {
-      if (!orderData.clientId || !orderData.items || !Array.isArray(orderData.items) || orderData.items.length === 0) {
-        throw new Error('Client ID and items are required');
+      if (!orderData.clientId || !orderData.productIds) {
+        throw new Error('ClientId and ProductIds are required');
       }
-
       return await OrdersRepository.saveOrder(orderData);
     } catch (error) {
       console.error('Service Error - saveOrder:', error);
@@ -60,41 +50,11 @@ class OrdersService {
     }
   }
 
-  // Simple sync-style methods to match original controller
-  getByDateRange(startDate, endDate) {
-    try {
-      // Basic mock implementation - in original it was synchronous
-      return [];
-    } catch (error) {
-      throw new Error('Formato de fecha inválido');
-    }
+  getById(id) {
+    return this.getOrderById(id).catch(() => null);
   }
 
-  calculateTotal(productIds) {
-    try {
-      // Basic mock implementation - in original it was synchronous
-      const mockPrices = { 1: 10, 2: 20, 3: 30 }; // Mock product prices
-      return productIds.reduce((sum, id) => sum + (mockPrices[id] || 0), 0);
-    } catch (error) {
-      throw new Error('Error calculating total');
-    }
-  }
-
-  getTotalRevenue() {
-    // Basic mock implementation - in original it was synchronous
-    return 1500.50;
-  }
-
-  getOrdersToday() {
-    // Basic mock implementation - in original it was synchronous
-    return [];
-  }
-
-  getClientOrderCount(clientId) {
-    // Basic mock implementation - in original it was synchronous
-    return 0;
-  }
-
+  // gRPC method to get order info
   getOrderInfo(orderId) {
     return new Promise((resolve, reject) => {
       client.GetOrderInfo({ order_id: orderId }, (error, response) => {

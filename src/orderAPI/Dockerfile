@@ -5,16 +5,19 @@ FROM node:16
 WORKDIR /usr/src/app
 
 # Copy package.json and package-lock.json
-COPY package*.json ./
+COPY src/orderAPI/package*.json ./
 
 # Install dependencies
 RUN npm install
 
+# Copy proto files
+COPY proto /app/proto
+
 # Copy the rest of the application code
-COPY . .
+COPY src/orderAPI .
 
 # Expose the port the app runs on
-EXPOSE 3003
+EXPOSE 3004
 
 # Start the application
 CMD ["node", "server.js"]

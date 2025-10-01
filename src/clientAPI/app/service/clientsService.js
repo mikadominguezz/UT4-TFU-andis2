@@ -1,8 +1,8 @@
-const ClientsRepository = require('../repository/clientsRepository');
+﻿const ClientsRepository = require('../repository/clientsRepository');
 const grpc = require('@grpc/grpc-js');
 const protoLoader = require('@grpc/proto-loader');
 
-const PROTO_PATH = '/app/proto/product.proto';
+const PROTO_PATH = '/app/proto/client.proto';
 const packageDefinition = protoLoader.loadSync(PROTO_PATH, {
   keepCase: true,
   longs: String,
@@ -38,37 +38,11 @@ class ClientsService {
     }
   }
 
-  async getClientsByName(name) {
-    try {
-      return await ClientsRepository.getClientsByName(name);
-    } catch (error) {
-      console.error('Service Error - getClientsByName:', error);
-      throw new Error('Unable to search clients by name');
-    }
-  }
-
-  async getActiveClients() {
-    try {
-      return await ClientsRepository.getActiveClients();
-    } catch (error) {
-      console.error('Service Error - getActiveClients:', error);
-      throw new Error('Unable to fetch active clients');
-    }
-  }
-
   async saveClient(clientData) {
     try {
-      // Validate required fields
-      if (!clientData.name || !clientData.email) {
-        throw new Error('Name and email are required');
+      if (!clientData.name) {
+        throw new Error('Name is required');
       }
-
-      // Check if email already exists
-      const existingClient = await ClientsRepository.getClientByEmail(clientData.email);
-      if (existingClient) {
-        throw new Error('Email already exists');
-      }
-
       return await ClientsRepository.saveClient(clientData);
     } catch (error) {
       console.error('Service Error - saveClient:', error);
@@ -76,16 +50,12 @@ class ClientsService {
     }
   }
 
-  async getClientStats() {
-    try {
-      return await ClientsRepository.getClientStats();
-    } catch (error) {
-      console.error('Service Error - getClientStats:', error);
-      throw new Error('Unable to fetch client statistics');
-    }
+  getById(id) {
+    return this.getClientById(id).catch(() => null);
   }
 
-  async getClientInfo(clientId) {
+  // gRPC method to get client info
+  getClientInfo(clientId) {
     return new Promise((resolve, reject) => {
       client.GetClientInfo({ client_id: clientId }, (error, response) => {
         if (error) {
@@ -95,17 +65,6 @@ class ClientsService {
         }
       });
     });
-  }
-
-  // Legacy methods for backward compatibility
-  getById(id) {
-    // Convert to sync-like interface for existing code
-    return this.getClientById(id).catch(() => null);
-  }
-
-  getByName(name) {
-    // Convert to sync-like interface for existing code  
-    return this.getClientsByName(name).catch(() => []);
   }
 }
 

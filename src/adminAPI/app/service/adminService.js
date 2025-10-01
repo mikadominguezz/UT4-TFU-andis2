@@ -2,7 +2,7 @@ const AdminRepository = require('../repository/adminRepository');
 const grpc = require('@grpc/grpc-js');
 const protoLoader = require('@grpc/proto-loader');
 
-const PROTO_PATH = '/app/proto/product.proto';
+const PROTO_PATH = '/app/proto/admin.proto';
 const packageDefinition = protoLoader.loadSync(PROTO_PATH, {
   keepCase: true,
   longs: String,
