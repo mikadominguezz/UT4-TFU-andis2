@@ -7,8 +7,8 @@ class DatabaseConnection {
 
   async connect() {
     try {
-      const mongoUri = process.env.MONGODB_URI || 'mongodb://admin:techmart2025@techmart-mongo:27017/techmart?authSource=admin';
-      
+      const mongoUri = process.env.MONGODB_URI || 'mongodb://admin:techmart2025@mongodb:27017/techmart?authSource=admin';
+
       const options = {
         serverSelectionTimeoutMS: 5000,
         maxPoolSize: 10,
@@ -21,10 +21,10 @@ class DatabaseConnection {
       };
 
       this.connection = await mongoose.connect(mongoUri, options);
-      
+
       console.log('✅ MongoDB conectado exitosamente');
       console.log(`📊 Base de datos: ${this.connection.connection.name}`);
-      
+
       this.connection.connection.on('error', (err) => {
         console.error('❌ Error de conexión MongoDB:', err);
       });

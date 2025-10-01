@@ -7,7 +7,8 @@ const PORT = 3002;
 app.use(express.json());
 
 // MongoDB Connection
-mongoose.connect('mongodb://localhost:27017/clients', {
+const mongoUri = process.env.MONGO_URI || 'mongodb://admin:techmart2025@mongodb:27017/clients?authSource=admin';
+mongoose.connect(mongoUri, {
   useNewUrlParser: true,
   useUnifiedTopology: true
 }).then(() => console.log('Connected to Clients Database'))
