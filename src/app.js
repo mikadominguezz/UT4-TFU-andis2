@@ -77,9 +77,9 @@ async function createApp() {
 
   // Ruta protegida
   app.get('/protected', authenticateJWT(process.env.JWT_SECRET), (req, res) => {
-    res.status(200).json({ 
-      message: 'Acceso autorizado', 
-      user: req.user 
+    res.status(200).json({
+      message: 'Acceso autorizado',
+      user: req.user
     });
   });
 
@@ -89,9 +89,9 @@ async function createApp() {
     if (!roles.includes('admin')) {
       return res.status(403).json({ error: 'Solo administradores' });
     }
-    res.status(200).json({ 
-      message: 'Área de administración', 
-      user: req.user 
+    res.status(200).json({
+      message: 'Área de administración',
+      user: req.user
     });
   });
 
@@ -173,9 +173,9 @@ async function createApp() {
       return res.status(401).json({ error: 'Credenciales inválidas' });
     }
 
-    const token = jwt.sign({ 
-      username: user.username, 
-      roles: user.roles 
+    const token = jwt.sign({
+      username: user.username,
+      roles: user.roles
     }, process.env.JWT_SECRET, { expiresIn: '1h' });
     res.status(200).json({ token });
   });

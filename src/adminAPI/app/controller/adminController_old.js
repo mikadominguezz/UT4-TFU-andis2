@@ -4,10 +4,12 @@ const express = require('express');
 const router = express.Router();
 const { authenticateJWT, authorizeRoles } = require('../middleware/auth');
 const AdminService = require('../service/adminService');
+const db = require('../database/database');
 
 const SECRET = process.env.JWT_SECRET;
 
-// Keep the original endpoints but with repository pattern
+db.connect();
+
 router.get('/clients', authenticateJWT(SECRET), authorizeRoles('admin'), async (req, res) => {
   try {
     const clients = await AdminService.getAllClientsWithDetails();
@@ -51,18 +53,16 @@ router.get('/clients/:id', authenticateJWT(SECRET), authorizeRoles('admin'), asy
     res.status(404).json({ error: 'Client not found' });
   }
 });
+  const client = AdminService.getById(id);
+  res.json(client);
+});
 
-router.put('/clients/:id', authenticateJWT(SECRET), authorizeRoles('admin'), async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { name, email, active } = req.body;
-    if (!name) return res.status(400).json({ error: 'Nombre es requerido' });
-    const updated = await AdminService.updateClientAsAdmin(id, { name, email, active });
-    res.status(200).json(updated);
-  } catch (error) {
-    console.error('Controller Error - updateClient:', error);
-    res.status(400).json({ error: error.message });
-  }
+router.put('/clients/:id', authenticateJWT(SECRET), authorizeRoles('admin'), (req, res) => {
+  const { id } = req.params;
+  const { name, email, active } = req.body;
+  if (!name) return res.status(400).json({ error: 'Nombre es requerido' });
+  const updated = AdminService.updateClientAsAdmin(id, { name, email, active });
+  res.status(200).json(updated);
 });
 
 router.get('/dashboard', authenticateJWT(SECRET), authorizeRoles('admin'), (req, res) => {
@@ -71,20 +71,14 @@ router.get('/dashboard', authenticateJWT(SECRET), authorizeRoles('admin'), (req,
   res.json(stats);
 });
 
-router.patch('/clients/:id/status', authenticateJWT(SECRET), authorizeRoles('admin'), async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { active } = req.body;
-    if (active === undefined) return res.status(400).json({ error: 'Campo active es requerido (true/false)' });
-    const updatedClient = await AdminService.toggleClientStatus(id, active);
-    res.json(updatedClient);
-  } catch (error) {
-    console.error('Controller Error - toggleClientStatus:', error);
-    res.status(400).json({ error: error.message });
-  }
+router.patch('/clients/:id/status', authenticateJWT(SECRET), authorizeRoles('admin'), (req, res) => {
+  const { id } = req.params;
+  const { active } = req.body;
+  if (active === undefined) return res.status(400).json({ error: 'Campo active es requerido (true/false)' });
+  const updatedClient = AdminService.toggleClientStatus(id, active);
+  res.json(updatedClient);
 });
 
-// Keep the advanced features but with simpler implementations
 router.post('/clients/advanced-search', authenticateJWT(SECRET), authorizeRoles('admin'), (req, res) => {
   const criteria = req.body;
   const results = AdminService.advancedClientSearch ? AdminService.advancedClientSearch(criteria) : [];

@@ -22,17 +22,4 @@ function authorizeRoles(...allowedRoles) {
   };
 }
 
-function authorizeCustomersOnly() {
-  return (req, res, next) => {
-    const roles = (req.user && req.user.roles) || [];
-    const isCustomer = roles.includes('user') && !roles.includes('admin');
-    if (!isCustomer) {
-      return res.status(403).json({
-        error: 'Solo los clientes pueden crear órdenes. Los administradores no pueden realizar compras.'
-      });
-    }
-    next();
-  };
-}
-
-module.exports = { authenticateJWT, authorizeRoles, authorizeCustomersOnly };
+module.exports = { authenticateJWT, authorizeRoles };
