@@ -72,7 +72,7 @@ services:
     ports:
       - "3003:3003"
     environment:
-      - MONGO_URI=mongodb://admin:techmart2025@mongodb:27017/products?authSource=admin
+      - MONGO_URI=mongodb://admin:techmart2025@mongodb:27017/techmart?authSource=admin
     depends_on:
       mongodb:
         condition: service_healthy
