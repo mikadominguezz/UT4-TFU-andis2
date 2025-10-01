@@ -15,8 +15,8 @@ const adminProto = grpc.loadPackageDefinition(packageDefinition).AdminService;
 const client = new adminProto('localhost:50052', grpc.credentials.createInsecure());
 
 class AdminService {
-  
-  // Basic client management - keep it simple like original
+
+  // Basic client management methods
   async getAllClientsWithDetails() {
     try {
       return await AdminRepository.getAllClients();
@@ -60,53 +60,18 @@ class AdminService {
     }
   }
 
-  async searchClients(searchTerm) {
+  // Product management methods
+  async createProduct(productData) {
     try {
-      return await AdminRepository.searchClients(searchTerm);
+      // For simplicity, we'll create products directly in the admin service
+      // Import Product schema directly (they share the same database)
+      const Product = require('../../productAPI/app/schema/ProductSchema');
+      const product = new Product(productData);
+      return await product.save();
     } catch (error) {
-      console.error('Service Error - searchClients:', error);
+      console.error('Service Error - createProduct:', error);
       throw error;
     }
-  }
-
-  async toggleClientStatus(id, active) {
-    try {
-      return await AdminRepository.updateClient(id, { isActive: active });
-    } catch (error) {
-      console.error('Service Error - toggleClientStatus:', error);
-      throw error;
-    }
-  }
-
-  // Legacy sync-style methods for backward compatibility
-  getById(id) {
-    return this.getClientById(id).catch(() => null);
-  }
-
-  // Simple admin stats - optional method
-  getAdminStats() {
-    // Simple mock stats for dashboard
-    return {
-      totalClients: 0,
-      activeClients: 0,
-      lastUpdate: new Date().toISOString()
-    };
-  }
-
-  // Additional methods that were in original controller
-  advancedClientSearch(criteria) {
-    // Mock implementation
-    return [];
-  }
-
-  generateClientReport() {
-    // Mock implementation
-    return { message: 'Report generated', timestamp: new Date() };
-  }
-
-  bulkUpdateClients(clientIds, updateData) {
-    // Mock implementation
-    return { updated: clientIds.length, data: updateData };
   }
 
   // gRPC method to get admin info
