@@ -182,8 +182,23 @@ La partición se realizó por dominio funcional (productos, clientes, órdenes) 
 Se analizaron los requerimientos del dominio e-commerce y se identificaron los módulos funcionales principales. Cada módulo expone interfaces para interacción y desacoplamiento.
 
 ---
-### Contenedores vs Máquinas Virtuales
-Se eligieron contenedores (Docker) por su ligereza, velocidad de despliegue y facilidad de escalado horizontal. Si se usaran máquinas virtuales, el despliegue sería más pesado y menos eficiente para escalar instancias rápidamente.
+### Contenedores en vez de Máquinas Virtuales
+Se eligieron contenedores (Docker) por su ligereza, velocidad de despliegue y facilidad de escalado horizontal. 
+
+**Explicación de como se utilizaría una Maquina Virtual**
+Si quisieramos usaran máquinas virtuales, deberíamos crear una cuenta azure en la que crear un grupo de recursos (un contenedor logico). Luego de esto proceder a crear la maquina virtual definiendo "nombre", "imagen de SO", "tamaño de disco", "usuario" y claves SSH.
+Azure devuelve la dirección ip publica para poder conectarse.
+Se obtiene la ip publica con la CLI (la herramienta con la cual se pueden administrar los servicios de Azure desde la terminal, te permite crear y administrar MV entre otras cosas).
+Se accede a la vm por el SSH con el usuario creado.
+La imagen de la VM se puede conseguir de Azure Marketplace.
+Es importante definir el tamaño de la VM porque define los recursos (deja listar tamaños disponibles en una región).
+Es importante entender como funciónan los "Estados de energía", iniciando, en ejecución, detenido, desasignado, etc. (Detenido aún cobra recursos de cómputo, pero Desasignado no.)
+Por ultimo queda la administración de la VM por medio de Azure CLI, como obtener las IPs de las VM, iniciarlas, detenerlas o eliminarlas.
+
+Es importante saber que para hacer escalamiento horizontal en Maquinas Virtuales, Azure recomienda y ofrece los VMSS (Virtual Machine Scale Sets). Por CLI se puede crear un scale set que permite que Azure administre automáticamente el número de instancias, distribuir el tráfico entre ellas (usando Load Balancer) y mantener la alta disponibilidad.
+No es necesario configurar a mano e instalar las herramientas dentro de cada maquina virtual que se cree. Basta con crear una plantilla y luego cuando el autoscalling del VMSS decida agregar más instancias, Azure generará nuevas VM a partir de esas plantillas.
+
+Al usar maquinas virtuales en vez de contenedores el despliegue sería más pesado y menos eficiente para escalar instancias rápidamente.
 
 ---
 ### ACID vs BASE
