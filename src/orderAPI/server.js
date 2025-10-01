@@ -16,8 +16,6 @@ mongoose.connect(mongoUri, {
 
 // Routes
 const ordersController = require('./app/controller/ordersController');
-app.use('/orders', ordersController);
-
-app.get('/', (req, res) => res.send('Orders Service Running'));
+app.use('/', ordersController);
 
 app.listen(PORT, () => console.log(`Orders Service running on port ${PORT}`));
