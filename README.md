@@ -145,41 +145,19 @@ POST http://localhost:8080/orders
 
 ### Modelo de Componentes UML
 
-![alt text](/docs/image.png)
 
-Mermaid Code:
-
-
-    flowchart LR
-        API[API REST]
-        Productos[Módulo Productos]
-        Clientes[Módulo Clientes]
-        Ordenes[Módulo Órdenes]
-        Interfaces[(Interfaces)]
-
-        API --> Productos
-        API --> Clientes
-        API --> Ordenes
-
-        Productos ..> Interfaces
-        Clientes ..> Interfaces
-        Ordenes ..> Interfaces
 
 ---
-### Descripción de componentes
-- API REST: Recibe las peticiones y las envía al módulo correspondiente. Utiliza clustering con 8 workers para escalabilidad horizontal.
-- Módulo Productos: Maneja sus propios datos hardcodeados de productos y expone servicios internos.
-- Módulo Clientes: Maneja sus propios datos hardcodeados de clientes y expone servicios internos.
-- Módulo Órdenes: Maneja sus propios datos hardcodeados de órdenes y utiliza servicios de otros módulos para validaciones.
-- Interfaces: Definen contratos entre módulos pero no contienen datos (cada módulo es responsable de sus datos).
 
----
+
 ### Justificación de partición de primer nivel
 La partición se realizó por dominio funcional (productos, clientes, órdenes) para facilitar escalabilidad, mantenimiento y despliegue independiente.
 
 ---
 ### Proceso para encontrar los componentes
-Se analizaron los requerimientos del dominio e-commerce y se identificaron los módulos funcionales principales. Cada módulo expone interfaces para interacción y desacoplamiento.
+Analizamos los requerimientos del dominio e-commerce e identificaron los módulos funcionales principales. Cada módulo expone interfaces para interacción y desacoplamiento.
+Elegimos utilizar partición por dominios, decisión que condicionó el resto del diseño, luego definimos las funciones principales y despues meditamos si necesitaban comunicarse entre si.
+
 
 ---
 ### Contenedores en vez de Máquinas Virtuales
