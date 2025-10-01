@@ -326,6 +326,7 @@ Quedó listo para pasar a producción.
 - 8 workers con clustering (según WEB_CONCURRENCY=8)
 - Reinicio automático (restart: on-failure)
 - Degradación elegante: En app.js, cuando el microservicio de productos falla, devuelve datos hardcodeados:
+
 Con esto priorizamos la disponibilidad y escalabilidad. Si se usara ACID, se sacrificaría escalabilidad y velocidad de respuesta por consistencia fuerte y transacciones.
 
 También utilizamos ´Soft State´(Estado Suave)
