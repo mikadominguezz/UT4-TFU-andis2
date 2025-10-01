@@ -2,43 +2,74 @@ require('dotenv').config();
 
 const express = require('express');
 const router = express.Router();
-const { authenticateJWT } = require('../../../middleware/auth');
+const { authenticateJWT, authorizeRoles, authorizeCustomersOnly } = require('../middleware/auth');
 const ClientsService = require('../service/clientsService');
-const db = require('../../../database');
 
 const SECRET = process.env.JWT_SECRET;
 
-db.connect();
-
-router.get('/:id/info', authenticateJWT(SECRET), (req, res) => {
-  const { id } = req.params;
-  const client = ClientsService.getById(id);
-  res.json({ id: client.id, name: client.name, active: client.active !== false });
+// Ruta principal para obtener todos los clientes
+router.get('/', authenticateJWT(SECRET), async (req, res) => {
+  try {
+    const clients = await ClientsService.getClients();
+    res.json(clients);
+  } catch (error) {
+    console.error('Controller Error - getClients:', error);
+    res.status(500).json({ error: 'Error al obtener los clientes' });
+  }
 });
 
-router.get('/:id/exists', authenticateJWT(SECRET), (req, res) => {
-  const { id } = req.params;
-  const client = ClientsService.getById(id);
-  const exists = !!client && client.active !== false;
-  res.json({ exists, id: parseInt(id) });
+router.get('/:id/info', authenticateJWT(SECRET), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const client = await ClientsService.getClientById(id);
+    res.json({ id: client._id, name: client.name, active: client.isActive });
+  } catch (error) {
+    console.error('Controller Error - getClientInfo:', error);
+    res.status(404).json({ error: 'Client not found' });
+  }
 });
 
-router.get('/search/:name', authenticateJWT(SECRET), (req, res) => {
-  const { name } = req.params;
-  const clients = ClientsService.getByName(name);
-  const publicClients = clients.filter(client => client.active !== false).map(client => ({ id: client.id, name: client.name }));
-  res.json(publicClients);
+router.get('/:id/exists', authenticateJWT(SECRET), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const client = await ClientsService.getClientById(id);
+    res.json({ exists: !!client, id: parseInt(id) });
+  } catch (error) {
+    res.json({ exists: false, id: parseInt(id) });
+  }
 });
 
-router.get('/active', authenticateJWT(SECRET), (req, res) => {
-  const activeClients = ClientsService.getActiveClients();
-  const publicClients = activeClients.map(client => ({ id: client.id, name: client.name }));
-  res.json(publicClients);
+router.get('/search/:name', authenticateJWT(SECRET), async (req, res) => {
+  try {
+    const { name } = req.params;
+    const clients = await ClientsService.getClientsByName(name);
+    const publicClients = clients.map(client => ({ id: client._id, name: client.name }));
+    res.json(publicClients);
+  } catch (error) {
+    console.error('Controller Error - searchClients:', error);
+    res.status(500).json({ error: 'Error searching clients' });
+  }
 });
 
-router.get('/stats/public', authenticateJWT(SECRET), (req, res) => {
-  const stats = ClientsService.getClientStats();
-  res.json({ totalActiveClients: stats.active, timestamp: stats.timestamp });
+router.get('/active', authenticateJWT(SECRET), async (req, res) => {
+  try {
+    const activeClients = await ClientsService.getActiveClients();
+    const publicClients = activeClients.map(client => ({ id: client._id, name: client.name }));
+    res.json(publicClients);
+  } catch (error) {
+    console.error('Controller Error - getActiveClients:', error);
+    res.status(500).json({ error: 'Error fetching active clients' });
+  }
+});
+
+router.get('/stats/public', authenticateJWT(SECRET), async (req, res) => {
+  try {
+    const stats = await ClientsService.getClientStats();
+    res.json({ totalActiveClients: stats.active, timestamp: stats.timestamp });
+  } catch (error) {
+    console.error('Controller Error - getClientStats:', error);
+    res.status(500).json({ error: 'Error fetching client statistics' });
+  }
 });
 
 router.get('/health', (req, res) => {

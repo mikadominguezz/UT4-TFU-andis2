@@ -4,10 +4,12 @@ const express = require('express');
 const router = express.Router();
 const { authenticateJWT, authorizeRoles, authorizeCustomersOnly } = require('../middleware/auth');
 const OrdersService = require('../service/ordersService');
+const db = require('../database/database');
 
 const SECRET = process.env.JWT_SECRET;
 
-// Keep exactly the same endpoints as original but using service layer
+db.connect();
+
 router.get('/', authenticateJWT(SECRET), authorizeRoles('admin'), async (req, res) => {
   try {
     const orders = await OrdersService.getOrders();
@@ -43,26 +45,27 @@ router.get('/client/:clientId', authenticateJWT(SECRET), authorizeRoles('admin')
   }
 });
 
-// Keep these as synchronous like original
-router.get('/date-range/:startDate/:endDate', authenticateJWT(SECRET), authorizeRoles('admin'), (req, res) => {
+router.get('/date-range/:startDate/:endDate', authenticateJWT(SECRET), authorizeRoles('admin'), async (req, res) => {
   const { startDate, endDate } = req.params;
   try {
-    const orders = OrdersService.getByDateRange(startDate, endDate);
+    const orders = await OrdersService.getByDateRange(startDate, endDate);
     res.json(orders);
   } catch (error) {
+    console.error('Controller Error - getOrdersByDateRange:', error);
     return res.status(400).json({ error: 'Formato de fecha inválido' });
   }
 });
 
-router.post('/calculate-total', authenticateJWT(SECRET), (req, res) => {
+router.post('/calculate-total', authenticateJWT(SECRET), async (req, res) => {
   const { productIds } = req.body;
   if (!productIds || !Array.isArray(productIds)) {
     return res.status(400).json({ error: 'productIds debe ser un array' });
   }
   try {
-    const total = OrdersService.calculateTotal(productIds);
+    const total = await OrdersService.calculateTotal(productIds);
     res.json({ total, productIds });
   } catch (error) {
+    console.error('Controller Error - calculateTotal:', error);
     return res.status(400).json({ error: error.message });
   }
 });
@@ -78,20 +81,35 @@ router.get('/:id', authenticateJWT(SECRET), authorizeRoles('admin'), async (req,
   }
 });
 
-router.get('/stats/revenue', authenticateJWT(SECRET), authorizeRoles('admin'), (req, res) => {
-  const totalRevenue = OrdersService.getTotalRevenue();
-  res.json({ totalRevenue, timestamp: new Date().toISOString() });
+router.get('/stats/revenue', authenticateJWT(SECRET), authorizeRoles('admin'), async (req, res) => {
+  try {
+    const totalRevenue = await OrdersService.getTotalRevenue();
+    res.json({ totalRevenue, timestamp: new Date().toISOString() });
+  } catch (error) {
+    console.error('Controller Error - getTotalRevenue:', error);
+    res.status(500).json({ error: 'Error calculating total revenue' });
+  }
 });
 
-router.get('/stats/today', authenticateJWT(SECRET), authorizeRoles('admin'), (req, res) => {
-  const todayOrders = OrdersService.getOrdersToday();
-  res.json({ orders: todayOrders, count: todayOrders.length, date: new Date().toISOString().split('T')[0] });
+router.get('/stats/today', authenticateJWT(SECRET), authorizeRoles('admin'), async (req, res) => {
+  try {
+    const todayOrders = await OrdersService.getOrdersToday();
+    res.json({ orders: todayOrders, count: todayOrders.length, date: new Date().toISOString().split('T')[0] });
+  } catch (error) {
+    console.error('Controller Error - getOrdersToday:', error);
+    res.status(500).json({ error: 'Error fetching today orders' });
+  }
 });
 
-router.get('/stats/client/:clientId/count', authenticateJWT(SECRET), authorizeRoles('admin'), (req, res) => {
-  const { clientId } = req.params;
-  const orderCount = OrdersService.getClientOrderCount(clientId);
-  res.json({ clientId: parseInt(clientId), orderCount, timestamp: new Date().toISOString() });
+router.get('/stats/client/:clientId/count', authenticateJWT(SECRET), authorizeRoles('admin'), async (req, res) => {
+  try {
+    const { clientId } = req.params;
+    const orderCount = await OrdersService.getClientOrderCount(clientId);
+    res.json({ clientId: parseInt(clientId), orderCount, timestamp: new Date().toISOString() });
+  } catch (error) {
+    console.error('Controller Error - getClientOrderCount:', error);
+    res.status(500).json({ error: 'Error counting client orders' });
+  }
 });
 
 router.get('/health', (req, res) => {

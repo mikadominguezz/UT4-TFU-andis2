@@ -7,7 +7,7 @@ const PORT = 3002;
 app.use(express.json());
 
 // MongoDB Connection
-const mongoUri = process.env.MONGO_URI || 'mongodb://admin:techmart2025@mongodb:27017/clients?authSource=admin';
+const mongoUri = process.env.MONGO_URI || 'mongodb://admin:techmart2025@mongodb:27017/techmart?authSource=admin';
 mongoose.connect(mongoUri, {
   useNewUrlParser: true,
   useUnifiedTopology: true
@@ -15,6 +15,9 @@ mongoose.connect(mongoUri, {
   .catch(err => console.error('Database connection error:', err));
 
 // Routes
+const clientsController = require('./app/controller/clientsController');
+app.use('/clients', clientsController);
+
 app.get('/', (req, res) => res.send('Clients Service Running'));
 
 app.listen(PORT, () => console.log(`Clients Service running on port ${PORT}`));

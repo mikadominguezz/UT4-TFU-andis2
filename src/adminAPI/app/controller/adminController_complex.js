@@ -4,10 +4,12 @@ const express = require('express');
 const router = express.Router();
 const { authenticateJWT, authorizeRoles } = require('../middleware/auth');
 const AdminService = require('../service/adminService');
+const db = require('../database/database');
 
 const SECRET = process.env.JWT_SECRET;
 
-// Keep the original endpoints but with repository pattern
+db.connect();
+
 router.get('/clients', authenticateJWT(SECRET), authorizeRoles('admin'), async (req, res) => {
   try {
     const clients = await AdminService.getAllClientsWithDetails();
@@ -57,7 +59,7 @@ router.put('/clients/:id', authenticateJWT(SECRET), authorizeRoles('admin'), asy
     const { id } = req.params;
     const { name, email, active } = req.body;
     if (!name) return res.status(400).json({ error: 'Nombre es requerido' });
-    const updated = await AdminService.updateClientAsAdmin(id, { name, email, active });
+    const updated = await AdminService.updateClient(id, { name, email, isActive: active });
     res.status(200).json(updated);
   } catch (error) {
     console.error('Controller Error - updateClient:', error);
@@ -65,10 +67,15 @@ router.put('/clients/:id', authenticateJWT(SECRET), authorizeRoles('admin'), asy
   }
 });
 
-router.get('/dashboard', authenticateJWT(SECRET), authorizeRoles('admin'), (req, res) => {
-  const stats = AdminService.getAdminStats ? AdminService.getAdminStats() : {};
-  stats.adminUser = req.user.username;
-  res.json(stats);
+router.get('/dashboard', authenticateJWT(SECRET), authorizeRoles('admin'), async (req, res) => {
+  try {
+    const stats = await AdminService.getClientStats();
+    stats.adminUser = req.user.username;
+    res.json(stats);
+  } catch (error) {
+    console.error('Controller Error - getDashboard:', error);
+    res.status(500).json({ error: 'Error fetching dashboard data' });
+  }
 });
 
 router.patch('/clients/:id/status', authenticateJWT(SECRET), authorizeRoles('admin'), async (req, res) => {
@@ -76,7 +83,11 @@ router.patch('/clients/:id/status', authenticateJWT(SECRET), authorizeRoles('adm
     const { id } = req.params;
     const { active } = req.body;
     if (active === undefined) return res.status(400).json({ error: 'Campo active es requerido (true/false)' });
-    const updatedClient = await AdminService.toggleClientStatus(id, active);
+    
+    const updatedClient = active 
+      ? await AdminService.activateClient(id)
+      : await AdminService.deactivateClient(id);
+    
     res.json(updatedClient);
   } catch (error) {
     console.error('Controller Error - toggleClientStatus:', error);
@@ -84,24 +95,14 @@ router.patch('/clients/:id/status', authenticateJWT(SECRET), authorizeRoles('adm
   }
 });
 
-// Keep the advanced features but with simpler implementations
-router.post('/clients/advanced-search', authenticateJWT(SECRET), authorizeRoles('admin'), (req, res) => {
-  const criteria = req.body;
-  const results = AdminService.advancedClientSearch ? AdminService.advancedClientSearch(criteria) : [];
-  res.json({ criteria, results, count: results.length });
-});
-
-router.get('/reports/clients', authenticateJWT(SECRET), authorizeRoles('admin'), (req, res) => {
-  const report = AdminService.generateClientReport ? AdminService.generateClientReport() : {};
-  res.json(report);
-});
-
-router.post('/clients/bulk-update', authenticateJWT(SECRET), authorizeRoles('admin'), (req, res) => {
-  const { clientIds, updateData } = req.body;
-  if (!clientIds || !Array.isArray(clientIds) || clientIds.length === 0) return res.status(400).json({ error: 'clientIds debe ser un array no vacío' });
-  if (!updateData || typeof updateData !== 'object') return res.status(400).json({ error: 'updateData es requerido' });
-  const result = AdminService.bulkUpdateClients ? AdminService.bulkUpdateClients(clientIds, updateData) : {};
-  res.json(result);
+router.get('/clients/stats/summary', authenticateJWT(SECRET), authorizeRoles('admin'), async (req, res) => {
+  try {
+    const stats = await AdminService.getClientStats();
+    res.json(stats);
+  } catch (error) {
+    console.error('Controller Error - getClientStats:', error);
+    res.status(500).json({ error: 'Error fetching client statistics' });
+  }
 });
 
 router.get('/health', (req, res) => {

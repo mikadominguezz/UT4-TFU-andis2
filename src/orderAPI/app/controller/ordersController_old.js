@@ -4,10 +4,13 @@ const express = require('express');
 const router = express.Router();
 const { authenticateJWT, authorizeRoles, authorizeCustomersOnly } = require('../middleware/auth');
 const OrdersService = require('../service/ordersService');
+const db = require('../database/database');
+const Order = require('../schema/OrderSchema');
 
 const SECRET = process.env.JWT_SECRET;
 
-// Keep exactly the same endpoints as original but using service layer
+db.connect();
+
 router.get('/', authenticateJWT(SECRET), authorizeRoles('admin'), async (req, res) => {
   try {
     const orders = await OrdersService.getOrders();
@@ -43,7 +46,6 @@ router.get('/client/:clientId', authenticateJWT(SECRET), authorizeRoles('admin')
   }
 });
 
-// Keep these as synchronous like original
 router.get('/date-range/:startDate/:endDate', authenticateJWT(SECRET), authorizeRoles('admin'), (req, res) => {
   const { startDate, endDate } = req.params;
   try {

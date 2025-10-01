@@ -35,8 +35,16 @@ class OrdersService {
 
   async saveOrder(orderData) {
     try {
+      // Validate required fields
       if (!orderData.clientId || !orderData.items || !Array.isArray(orderData.items) || orderData.items.length === 0) {
         throw new Error('Client ID and items are required');
+      }
+
+      // Calculate total if not provided
+      if (!orderData.total && orderData.items) {
+        orderData.total = orderData.items.reduce((sum, item) => {
+          return sum + (item.price * item.quantity);
+        }, 0);
       }
 
       return await OrdersRepository.saveOrder(orderData);
@@ -46,39 +54,45 @@ class OrdersService {
     }
   }
 
-  // Simple sync-style methods to match original controller
-  getByDateRange(startDate, endDate) {
+  async updateOrderStatus(id, status) {
     try {
-      // Basic mock implementation - in original it was synchronous
-      return [];
+      const validStatuses = ['pending', 'processing', 'completed', 'cancelled'];
+      if (!validStatuses.includes(status)) {
+        throw new Error('Invalid order status');
+      }
+
+      return await OrdersRepository.updateOrderStatus(id, status);
     } catch (error) {
-      throw new Error('Formato de fecha inválido');
+      console.error('Service Error - updateOrderStatus:', error);
+      throw error;
     }
   }
 
-  calculateTotal(productIds) {
+  async cancelOrder(id) {
     try {
-      // Basic mock implementation - in original it was synchronous
-      const mockPrices = { 1: 10, 2: 20, 3: 30 }; // Mock product prices
-      return productIds.reduce((sum, id) => sum + (mockPrices[id] || 0), 0);
+      return await OrdersRepository.cancelOrder(id);
     } catch (error) {
-      throw new Error('Error calculating total');
+      console.error('Service Error - cancelOrder:', error);
+      throw error;
     }
   }
 
-  getTotalRevenue() {
-    // Basic mock implementation - in original it was synchronous
-    return 1500.50;
+  async getOrderStats() {
+    try {
+      return await OrdersRepository.getOrderStats();
+    } catch (error) {
+      console.error('Service Error - getOrderStats:', error);
+      throw new Error('Unable to fetch order statistics');
+    }
   }
 
-  getOrdersToday() {
-    // Basic mock implementation - in original it was synchronous
-    return [];
+  // Legacy methods for backward compatibility
+  getAll() {
+    return this.getOrders().catch(() => []);
   }
 
-  getClientOrderCount(clientId) {
-    // Basic mock implementation - in original it was synchronous
-    return 0;
+  create(orderData) {
+    return this.saveOrder(orderData);
   }
 }
 
