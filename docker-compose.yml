@@ -14,6 +14,12 @@ services:
       - ./mongodb-init:/docker-entrypoint-initdb.d
     networks:
       - techmart-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
   app:
     build: .
@@ -26,7 +32,8 @@ services:
       - MONGODB_URI=mongodb://admin:techmart2025@mongodb:27017/techmart?authSource=admin
     restart: on-failure
     depends_on:
-      - mongodb
+      mongodb:
+        condition: service_healthy
     networks:
       - techmart-network
 
@@ -37,9 +44,10 @@ services:
     ports:
       - "3001:3001"
     environment:
-      - MONGO_URI=mongodb://mongodb:27017/admin
+      - MONGO_URI=mongodb://admin:techmart2025@mongodb:27017/admin?authSource=admin
     depends_on:
-      - mongodb
+      mongodb:
+        condition: service_healthy
     networks:
       - techmart-network
 
@@ -50,9 +58,10 @@ services:
     ports:
       - "3002:3002"
     environment:
-      - MONGO_URI=mongodb://mongodb:27017/clients
+      - MONGO_URI=mongodb://admin:techmart2025@mongodb:27017/clients?authSource=admin
     depends_on:
-      - mongodb
+      mongodb:
+        condition: service_healthy
     networks:
       - techmart-network
 
@@ -63,9 +72,10 @@ services:
     ports:
       - "3003:3003"
     environment:
-      - MONGO_URI=mongodb://mongodb:27017/products
+      - MONGO_URI=mongodb://admin:techmart2025@mongodb:27017/products?authSource=admin
     depends_on:
-      - mongodb
+      mongodb:
+        condition: service_healthy
     networks:
       - techmart-network
 
@@ -76,9 +86,10 @@ services:
     ports:
       - "3004:3004"
     environment:
-      - MONGO_URI=mongodb://mongodb:27017/orders
+      - MONGO_URI=mongodb://admin:techmart2025@mongodb:27017/orders?authSource=admin
     depends_on:
-      - mongodb
+      mongodb:
+        condition: service_healthy
     networks:
       - techmart-network
 
