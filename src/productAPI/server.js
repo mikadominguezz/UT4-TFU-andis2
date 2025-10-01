@@ -16,8 +16,6 @@ mongoose.connect(mongoUri, {
 
 // Routes
 const productsController = require('./app/controller/productsController');
-app.use('/products', productsController);
-
-app.get('/', (req, res) => res.send('Products Service Running'));
+app.use('/', productsController);
 
 app.listen(PORT, () => console.log(`Products Service running on port ${PORT}`));
