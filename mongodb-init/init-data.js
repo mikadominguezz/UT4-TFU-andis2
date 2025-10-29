@@ -1,4 +1,4 @@
-db = db.getSiblingDB('techmart');
+db = db.getSiblingDB('techmart_ut4');
 
 db.products.deleteMany({});
 db.clients.deleteMany({});
