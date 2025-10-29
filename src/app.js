@@ -223,15 +223,19 @@ async function createApp() {
   });
 
   // 📊 Endpoint para obtener estadísticas del cache (Cache-Aside Pattern)
-  app.get('/cache/stats', authenticateJWT(process.env.JWT_SECRET), (req, res) => {
-    const stats = globalCache.getStats();
-    res.json({
-      message: 'Estadísticas del Cache-Aside Pattern',
-      cacheStats: stats,
-      pattern: 'Cache-Aside',
-      description: 'Patrón de rendimiento que mantiene datos frecuentemente accedidos en memoria'
-    });
-  });
+  app.get('/cache/stats', 
+    authenticateJWT(process.env.JWT_SECRET),
+    gatewayOffloading.authorizeRoles(['admin']),
+    (req, res) => {
+      const stats = globalCache.getStats();
+      res.json({
+        message: 'Estadísticas del Cache-Aside Pattern',
+        cacheStats: stats,
+        pattern: 'Cache-Aside',
+        description: 'Patrón de rendimiento que mantiene datos frecuentemente accedidos en memoria'
+      });
+    }
+  );
 
   // 🗑️ Endpoint para limpiar el cache (solo admins)
   app.delete('/cache', 
