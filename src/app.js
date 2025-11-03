@@ -1,6 +1,7 @@
 const express = require('express');
 const axios = require('axios');
 const jwt = require('jsonwebtoken');
+const cluster = require('cluster');
 const { globalCache } = require('./utils/cacheAside');
 const { gatewayOffloading } = require('./utils/gatewayOffloading');
 
@@ -23,10 +24,15 @@ async function createApp() {
     max: 100, // máximo 100 requests por IP
   });
   
-  app.use('/login', authRateLimit);
-  app.use(generalRateLimit);
-  
   app.use(express.json());
+  
+  // Aplicar rate limiting selectivamente
+  app.use('/login', authRateLimit);
+  app.use('/api', generalRateLimit);
+  app.use('/products', generalRateLimit);
+  app.use('/orders', generalRateLimit);
+  app.use('/admin', generalRateLimit);
+  app.use('/clients', generalRateLimit);
 
   // Middleware de autenticación JWT
   function authenticateJWT(secret) {
@@ -271,6 +277,117 @@ async function createApp() {
         logs: logs,
         pattern: 'Gateway Offloading',
         description: 'Logs de eventos de seguridad centralizados en el gateway'
+      });
+    }
+  );
+
+  // 🔧 Endpoint público para probar Circuit Breaker
+  app.get('/test/circuit-breaker', async (req, res) => {
+      const testResults = {
+        pattern: 'Circuit Breaker Pattern',
+        description: 'Prueba del patrón Circuit Breaker con y sin servicio disponible',
+        timestamp: new Date().toISOString(),
+        tests: []
+      };
+
+      // Test 1: Verificar estado del microservicio
+      try {
+        const healthCheck = await axios.get('http://products-api:3003/health', { timeout: 2000 });
+        testResults.tests.push({
+          test: 'Verificar estado del microservicio',
+          status: 'SUCCESS',
+          message: 'Microservicio de productos está disponible',
+          serviceResponse: healthCheck.data
+        });
+      } catch (error) {
+        testResults.tests.push({
+          test: 'Verificar estado del microservicio',
+          status: 'FAILED',
+          message: 'Microservicio de productos NO está disponible',
+          error: error.message
+        });
+      }
+
+      // Test 2: Intentar obtener productos con Circuit Breaker
+      try {
+        const productsResponse = await axios.get('http://products-api:3003/products', {
+          headers: { 'Authorization': req.headers['authorization'] },
+          timeout: 5000
+        });
+        testResults.tests.push({
+          test: 'Obtener productos del microservicio',
+          status: 'SUCCESS',
+          message: 'Productos obtenidos del microservicio real',
+          circuitBreakerActivated: false,
+          productsCount: productsResponse.data.length,
+          sampleProduct: productsResponse.data[0]
+        });
+      } catch (error) {
+        // Circuit Breaker activa fallback
+        const fallbackProducts = [
+          { id: 1, name: 'Product A (Fallback)', price: 100 },
+          { id: 2, name: 'Product B (Fallback)', price: 200 }
+        ];
+        testResults.tests.push({
+          test: 'Obtener productos con Circuit Breaker',
+          status: 'FALLBACK_ACTIVATED',
+          message: '⚠️ Circuit Breaker activado - Devolviendo datos fallback',
+          circuitBreakerActivated: true,
+          originalError: error.message,
+          fallbackProducts: fallbackProducts,
+          explanation: 'El microservicio falló, pero el sistema sigue funcionando con datos de respaldo'
+        });
+      }
+
+      res.json(testResults);
+    }
+  );
+
+  // 🔄 Endpoint público para probar Competing Consumers
+  app.get('/test/competing-consumers', (req, res) => {
+      // Información del worker que procesó este request
+      const workerInfo = {
+        pattern: 'Competing Consumers Pattern',
+        description: 'Múltiples workers (consumers) compiten por procesar requests de una cola común',
+        timestamp: new Date().toISOString(),
+        currentWorker: {
+          workerId: cluster.worker ? cluster.worker.id : 'N/A',
+          workerPID: process.pid,
+          isMaster: cluster.isMaster || cluster.isPrimary,
+          totalWorkers: parseInt(process.env.WEB_CONCURRENCY) || 2
+        },
+        explanation: `Este request fue procesado por el Worker ${cluster.worker ? cluster.worker.id : 'N/A'} (PID: ${process.pid})`,
+        howItWorks: [
+          '1. El Master process crea múltiples workers (8 por defecto)',
+          '2. Cada worker es un proceso independiente que comparte el puerto 8080',
+          '3. El sistema operativo distribuye los requests entre los workers disponibles',
+          '4. Si un worker falla, el Master lo reinicia automáticamente',
+          '5. Esto permite procesamiento paralelo y alta disponibilidad'
+        ],
+        testInstructions: 'Haz múltiples requests a este endpoint y verás que diferentes workers los procesan'
+      };
+
+      res.json(workerInfo);
+    }
+  );
+
+  // 🔄 Endpoint público para simular carga y ver distribución
+  app.get('/test/competing-consumers/load', async (req, res) => {
+      const iterations = parseInt(req.query.iterations) || 10;
+      const delay = parseInt(req.query.delay) || 100;
+
+      // Simular trabajo pesado
+      await new Promise(resolve => setTimeout(resolve, delay));
+
+      res.json({
+        pattern: 'Competing Consumers - Load Test',
+        processedBy: {
+          workerId: cluster.worker ? cluster.worker.id : 'N/A',
+          workerPID: process.pid
+        },
+        requestNumber: req.query.requestNumber || 1,
+        timestamp: new Date().toISOString(),
+        message: `Request procesado por Worker ${cluster.worker ? cluster.worker.id : 'N/A'} después de ${delay}ms`
       });
     }
   );
