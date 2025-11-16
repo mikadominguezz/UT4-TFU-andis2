@@ -1,4 +1,4 @@
-db = db.getSiblingDB('techmart_ut4');
+db = db.getSiblingDB("techmart_ut5");
 
 db.products.deleteMany({});
 db.clients.deleteMany({});
@@ -16,7 +16,7 @@ db.products.insertMany([
     isActive: true,
     metadata: { views: 150, sales: 12, rating: 4.8, reviews: 45 },
     createdAt: new Date(),
-    updatedAt: new Date()
+    updatedAt: new Date(),
   },
   {
     name: "Samsung Galaxy S24 Ultra",
@@ -29,12 +29,13 @@ db.products.insertMany([
     isActive: true,
     metadata: { views: 120, sales: 8, rating: 4.7, reviews: 32 },
     createdAt: new Date(),
-    updatedAt: new Date()
+    updatedAt: new Date(),
   },
   {
-    name: "MacBook Pro 14\"",
+    name: 'MacBook Pro 14"',
     price: 1999.99,
-    description: "Laptop profesional con chip M3 Pro, 18GB RAM y pantalla Liquid Retina XDR.",
+    description:
+      "Laptop profesional con chip M3 Pro, 18GB RAM y pantalla Liquid Retina XDR.",
     category: "Laptops",
     stock: 12,
     image: "https://via.placeholder.com/300x300?text=MacBook+Pro",
@@ -42,12 +43,13 @@ db.products.insertMany([
     isActive: true,
     metadata: { views: 200, sales: 6, rating: 4.9, reviews: 28 },
     createdAt: new Date(),
-    updatedAt: new Date()
+    updatedAt: new Date(),
   },
   {
     name: "Dell XPS 13",
     price: 1299.99,
-    description: "Ultrabook compacta con procesador Intel Core i7 de 13ª generación.",
+    description:
+      "Ultrabook compacta con procesador Intel Core i7 de 13ª generación.",
     category: "Laptops",
     stock: 15,
     image: "https://via.placeholder.com/300x300?text=Dell+XPS+13",
@@ -55,12 +57,13 @@ db.products.insertMany([
     isActive: true,
     metadata: { views: 90, sales: 4, rating: 4.5, reviews: 18 },
     createdAt: new Date(),
-    updatedAt: new Date()
+    updatedAt: new Date(),
   },
   {
     name: "iPad Air",
     price: 599.99,
-    description: "Tablet versátil con chip M1 y compatibilidad con Apple Pencil.",
+    description:
+      "Tablet versátil con chip M1 y compatibilidad con Apple Pencil.",
     category: "Tablets",
     stock: 30,
     image: "https://via.placeholder.com/300x300?text=iPad+Air",
@@ -68,12 +71,13 @@ db.products.insertMany([
     isActive: true,
     metadata: { views: 180, sales: 15, rating: 4.6, reviews: 52 },
     createdAt: new Date(),
-    updatedAt: new Date()
+    updatedAt: new Date(),
   },
   {
     name: "Sony WH-1000XM5",
     price: 349.99,
-    description: "Auriculares inalámbricos con cancelación de ruido líder en la industria.",
+    description:
+      "Auriculares inalámbricos con cancelación de ruido líder en la industria.",
     category: "Audio",
     stock: 40,
     image: "https://via.placeholder.com/300x300?text=Sony+WH1000XM5",
@@ -81,12 +85,13 @@ db.products.insertMany([
     isActive: true,
     metadata: { views: 220, sales: 25, rating: 4.8, reviews: 89 },
     createdAt: new Date(),
-    updatedAt: new Date()
+    updatedAt: new Date(),
   },
   {
     name: "Nintendo Switch OLED",
     price: 349.99,
-    description: "Consola híbrida con pantalla OLED de 7 pulgadas y colores vibrantes.",
+    description:
+      "Consola híbrida con pantalla OLED de 7 pulgadas y colores vibrantes.",
     category: "Gaming",
     stock: 22,
     image: "https://via.placeholder.com/300x300?text=Switch+OLED",
@@ -94,12 +99,13 @@ db.products.insertMany([
     isActive: true,
     metadata: { views: 300, sales: 18, rating: 4.7, reviews: 76 },
     createdAt: new Date(),
-    updatedAt: new Date()
+    updatedAt: new Date(),
   },
   {
-    name: "Samsung 4K Smart TV 55\"",
+    name: 'Samsung 4K Smart TV 55"',
     price: 699.99,
-    description: "Smart TV 4K UHD con tecnología QLED y sistema operativo Tizen.",
+    description:
+      "Smart TV 4K UHD con tecnología QLED y sistema operativo Tizen.",
     category: "TV & Home",
     stock: 8,
     image: "https://via.placeholder.com/300x300?text=Samsung+TV+55",
@@ -107,8 +113,8 @@ db.products.insertMany([
     isActive: true,
     metadata: { views: 140, sales: 3, rating: 4.4, reviews: 21 },
     createdAt: new Date(),
-    updatedAt: new Date()
-  }
+    updatedAt: new Date(),
+  },
 ]);
 
 db.clients.insertMany([
@@ -122,22 +128,22 @@ db.clients.insertMany([
       city: "New York",
       state: "NY",
       zipCode: "10001",
-      country: "USA"
+      country: "USA",
     },
     preferences: {
       categories: ["Smartphones", "Audio"],
       priceRange: { min: 100, max: 1000 },
-      notifications: { email: true, sms: false }
+      notifications: { email: true, sms: false },
     },
     isActive: true,
     metadata: {
       totalOrders: 3,
       totalSpent: 1249.97,
       lastLogin: new Date(),
-      registrationSource: "web"
+      registrationSource: "web",
     },
     createdAt: new Date(),
-    updatedAt: new Date()
+    updatedAt: new Date(),
   },
   {
     name: "Bob Smith",
@@ -149,22 +155,22 @@ db.clients.insertMany([
       city: "Los Angeles",
       state: "CA",
       zipCode: "90210",
-      country: "USA"
+      country: "USA",
     },
     preferences: {
       categories: ["Laptops", "Gaming"],
       priceRange: { min: 500, max: 3000 },
-      notifications: { email: true, sms: true }
+      notifications: { email: true, sms: true },
     },
     isActive: true,
     metadata: {
       totalOrders: 2,
       totalSpent: 2349.98,
       lastLogin: new Date(),
-      registrationSource: "mobile"
+      registrationSource: "mobile",
     },
     createdAt: new Date(),
-    updatedAt: new Date()
+    updatedAt: new Date(),
   },
   {
     name: "Maria García",
@@ -176,23 +182,23 @@ db.clients.insertMany([
       city: "Ciudad de México",
       state: "CDMX",
       zipCode: "06600",
-      country: "México"
+      country: "México",
     },
     preferences: {
       categories: ["Tablets", "TV & Home"],
       priceRange: { min: 200, max: 1500 },
-      notifications: { email: true, sms: false }
+      notifications: { email: true, sms: false },
     },
     isActive: true,
     metadata: {
       totalOrders: 1,
       totalSpent: 599.99,
       lastLogin: new Date(),
-      registrationSource: "social"
+      registrationSource: "social",
     },
     createdAt: new Date(),
-    updatedAt: new Date()
-  }
+    updatedAt: new Date(),
+  },
 ]);
 
 print("✅ Datos de ejemplo insertados correctamente:");

@@ -1,19 +1,18 @@
 services:
-  mongodb:
+  mongodb-admin:
     image: mongo:7.0
-    container_name: ut4-techmart-mongo
+    container_name: admin-mongo
     restart: always
     ports:
-      - "27017:27017"
+      - "27018:27017"
     environment:
       MONGO_INITDB_ROOT_USERNAME: admin
       MONGO_INITDB_ROOT_PASSWORD: techmart2025
-      MONGO_INITDB_DATABASE: techmart_ut4
+      MONGO_INITDB_DATABASE: admin_db
     volumes:
-      - ut4_mongodb_data:/data/db
-      - ./mongodb-init:/docker-entrypoint-initdb.d
+      - ut5_admin_mongodb_data:/data/db
     networks:
-      - ut4-techmart-network
+      - ut5-techmart-network
     healthcheck:
       test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
       interval: 10s
@@ -21,6 +20,70 @@ services:
       retries: 5
       start_period: 30s
 
+  mongodb-clients:
+    image: mongo:7.0
+    container_name: clients-mongo
+    restart: always
+    ports:
+      - "27019:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: techmart2025
+      MONGO_INITDB_DATABASE: clients_db
+    volumes:
+      - ut5_clients_mongodb_data:/data/db
+    networks:
+      - ut5-techmart-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  mongodb-products:
+    image: mongo:7.0
+    container_name: products-mongo
+    restart: always
+    ports:
+      - "27020:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: techmart2025
+      MONGO_INITDB_DATABASE: products_db
+    volumes:
+      - ut5_products_mongodb_data:/data/db
+    networks:
+      - ut5-techmart-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  mongodb-orders:
+    image: mongo:7.0
+    container_name: ut5-orders-mongo
+    restart: always
+    ports:
+      - "27021:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: techmart2025
+      MONGO_INITDB_DATABASE: orders_db
+    volumes:
+      - ut5_orders_mongodb_data:/data/db
+    networks:
+      - ut5-techmart-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # API Gateway (unchanged - no database dependency)
   app:
     build: .
     ports:
@@ -29,14 +92,11 @@ services:
       - .env
     environment:
       - WEB_CONCURRENCY=8
-      - MONGODB_URI=mongodb://admin:techmart2025@mongodb:27017/techmart_ut4?authSource=admin
     restart: on-failure
-    depends_on:
-      mongodb:
-        condition: service_healthy
     networks:
-      - ut4-techmart-network
+      - ut5-techmart-network
 
+  # Admin API with its own database
   admin-api:
     build:
       context: .
@@ -46,13 +106,14 @@ services:
     env_file:
       - .env
     environment:
-      - MONGO_URI=mongodb://admin:techmart2025@mongodb:27017/techmart_ut4?authSource=admin
+      - MONGO_URI=mongodb://admin:techmart2025@mongodb-admin:27017/admin_db?authSource=admin
     depends_on:
-      mongodb:
+      mongodb-admin:
         condition: service_healthy
     networks:
-      - ut4-techmart-network
+      - ut5-techmart-network
 
+  # Client API with its own database
   client-api:
     build:
       context: .
@@ -62,13 +123,14 @@ services:
     env_file:
       - .env
     environment:
-      - MONGO_URI=mongodb://admin:techmart2025@mongodb:27017/techmart_ut4?authSource=admin
+      - MONGO_URI=mongodb://admin:techmart2025@mongodb-clients:27017/clients_db?authSource=admin
     depends_on:
-      mongodb:
+      mongodb-clients:
         condition: service_healthy
     networks:
-      - ut4-techmart-network
+      - ut5-techmart-network
 
+  # Products API with its own database
   products-api:
     build:
       context: .
@@ -78,13 +140,14 @@ services:
     env_file:
       - .env
     environment:
-      - MONGO_URI=mongodb://admin:techmart2025@mongodb:27017/techmart_ut4?authSource=admin
+      - MONGO_URI=mongodb://admin:techmart2025@mongodb-products:27017/products_db?authSource=admin
     depends_on:
-      mongodb:
+      mongodb-products:
         condition: service_healthy
     networks:
-      - ut4-techmart-network
+      - ut5-techmart-network
 
+  # Orders API with its own database
   orders-api:
     build:
       context: .
@@ -94,17 +157,23 @@ services:
     env_file:
       - .env
     environment:
-      - MONGO_URI=mongodb://admin:techmart2025@mongodb:27017/techmart_ut4?authSource=admin
+      - MONGO_URI=mongodb://admin:techmart2025@mongodb-orders:27017/orders_db?authSource=admin
     depends_on:
-      mongodb:
+      mongodb-orders:
         condition: service_healthy
     networks:
-      - ut4-techmart-network
+      - ut5-techmart-network
 
 volumes:
-  ut4_mongodb_data:
+  ut5_admin_mongodb_data:
+    driver: local
+  ut5_clients_mongodb_data:
+    driver: local
+  ut5_products_mongodb_data:
+    driver: local
+  ut5_orders_mongodb_data:
     driver: local
 
 networks:
-  ut4-techmart-network:
+  ut5-techmart-network:
     driver: bridge
