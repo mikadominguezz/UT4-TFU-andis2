@@ -130,3 +130,15 @@ docker compose up --build
 - `GET /cache/stats` - Estadísticas de cache
 - `GET /security/stats` - Estadísticas de seguridad
 - `GET /security/logs` - Logs de seguridad
+
+### Endpoint con XML
+- `POST /soap`
+  (*Body:* )
+```xml
+  <?xml version="1.0" encoding="utf-8"?>
+  <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+    <soap:Body>
+      <getServicesHealthRequest xmlns="http://example.com/techmart"/>
+    </soap:Body>
+  </soap:Envelope>
+```
